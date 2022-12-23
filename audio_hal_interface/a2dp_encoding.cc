@@ -56,6 +56,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 #include "a2dp_sbc_constants.h"
 #include "a2dp_vendor_ldac_constants.h"
+#include "a2dp_vendor_lhdc_constants.h"
 #include "a2dp_vendor_aptx_adaptive.h"
 #include "a2dp_aac.h"
 #include "bta/av/bta_av_int.h"
@@ -802,6 +803,15 @@ bool a2dp_is_audio_codec_config_params_changed(
       }
       break;
     }
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+      [[fallthrough]];
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+      [[fallthrough]];
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+      changed = true;
+      LOG(ERROR) << __func__
+                 << ": Consider changed to LHDC from " << (int) codec_config->codecType;
+      break;
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -1046,6 +1056,15 @@ bool a2dp_is_audio_codec_config_params_changed_2_1(
       }
       break;
     }
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+      [[fallthrough]];
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+      [[fallthrough]];
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+      changed = true;
+      LOG(ERROR) << __func__
+                 << ": Consider changed to LHDC from " << (int) codec_config->codecType;
+      break;
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -1437,6 +1456,9 @@ bool a2dp_get_selected_hal_codec_config(CodecConfiguration* codec_config) {
     if ((A2DP_VendorCodecGetVendorId(p_codec_info)) == A2DP_LDAC_VENDOR_ID) {
       codec_config->encodedAudioBitrate = A2DP_GetTrackBitRate(p_codec_info);
       LOG(INFO) << __func__ << "LDAC bitrate" << codec_config->encodedAudioBitrate;
+    } else if ((A2DP_VendorCodecGetVendorId(p_codec_info)) == A2DP_LHDC_VENDOR_ID) {
+      codec_config->encodedAudioBitrate = A2DP_GetTrackBitRate(p_codec_info);
+      LOG(INFO) << __func__ << "LHDC bitrate" << codec_config->encodedAudioBitrate;
     } else {
       /* BR = (Sampl_Rate * PCM_DEPTH * CHNL)/Compression_Ratio */
       int bits_per_sample = 16; // TODO
