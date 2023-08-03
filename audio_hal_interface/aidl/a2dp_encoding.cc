@@ -68,6 +68,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 #include "controller.h"
 #include "a2dp_vendor_ldac_constants.h"
 #include "a2dp_vendor_lhdc_constants.h"
+#include "a2dp_vendor_flac_constants.h"
 //#include "a2dp_vendor_aptx_adaptive.h"
 #include "a2dp_aac.h"
 #include "btif_ahim.h"
@@ -306,6 +307,8 @@ bool a2dp_get_selected_hal_codec_config(CodecConfiguration* codec_config) {
         return false;
       }
       break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
+      break;
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -359,6 +362,9 @@ bool a2dp_get_selected_hal_codec_config(CodecConfiguration* codec_config) {
     } else if ((A2DP_VendorCodecGetVendorId(p_codec_info)) == A2DP_LHDC_VENDOR_ID) {
       codec_config->encodedAudioBitrate = A2DP_GetTrackBitRate(p_codec_info);
       LOG(INFO) << __func__ << "AIDL LHDC bitrate" << codec_config->encodedAudioBitrate;
+    } else if ((A2DP_VendorCodecGetVendorId(p_codec_info)) == A2DP_FLAC_VENDOR_ID) {
+      codec_config->encodedAudioBitrate = A2DP_GetTrackBitRate(p_codec_info);
+      LOG(INFO) << __func__ << "FLAC bitrate" << codec_config->encodedAudioBitrate;
     } else {
       /* BR = (Sampl_Rate * PCM_DEPTH * CHNL)/Compression_Ratio */
       int bits_per_sample = 16; // TODO

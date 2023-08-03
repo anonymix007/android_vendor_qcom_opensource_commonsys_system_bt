@@ -569,6 +569,8 @@ tA2DP_STATUS bta_av_co_audio_getconfig(tBTA_AV_HNDL hndl, uint8_t* p_codec_info,
     } else {
       APPL_TRACE_ERROR("%s: no more room for SINK info", __func__);
     }
+  } else {
+    APPL_TRACE_DEBUG("%s: Peer Sink Codec Invalid!", __func__);
   }
 
   std::string remote_bd_addr_str = p_peer->addr.ToString();
@@ -1585,6 +1587,7 @@ static bool bta_av_co_audio_update_selectable_codec(
                                   p_peer, codec_config.codecIndex());
   if (p_sink == NULL) {
     // The peer sink device does not support this codec
+    APPL_TRACE_DEBUG("%s: p_sink == NULL, the peer sink device does not support this codec", __func__);
     return false;
   }
   if ((p_peer->codecs == nullptr) || !p_peer->codecs->setCodecConfig(
@@ -2136,6 +2139,10 @@ void bta_av_co_check_and_add_soc_supported_codecs(const uint8_t* p_codec_info) {
     }
   }
 
+  //if (codec_index == BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC) {
+  APPL_TRACE_DEBUG("%s: %s Capability:  %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x", __func__, codec_name, p_codec_info[0], p_codec_info[1], p_codec_info[2], p_codec_info[3], p_codec_info[4], p_codec_info[5], p_codec_info[6], p_codec_info[7], p_codec_info[8], p_codec_info[9], p_codec_info[10], p_codec_info[11], p_codec_info[12], p_codec_info[13], p_codec_info[14], p_codec_info[15], p_codec_info[16], p_codec_info[17], p_codec_info[18], p_codec_info[19]);
+  //}
+
   if ((strcmp(codec_name,"SBC") == 0) &&
       A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_SBC)) {
     APPL_TRACE_DEBUG("%s: Both SoC and remote supports SBC, append to supported_codecs conf", __func__);
@@ -2193,6 +2200,12 @@ void bta_av_co_check_and_add_soc_supported_codecs(const uint8_t* p_codec_info) {
   if ((strcmp(codec_name,"LHDC V5") == 0) &&
       A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5)) {
     APPL_TRACE_DEBUG("%s: Both SoC and remote supports LHDC V5, append to supported_codecs conf", __func__);
+    bta_av_co_append_to_supported_codecs(p_codec_info);
+    return;
+  }
+   if ((strcmp(codec_name,"FLAC") == 0) &&
+      A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC)) {
+    APPL_TRACE_DEBUG("%s: Both SoC and remote supports FLAC, append to supported_codecs conf", __func__);
     bta_av_co_append_to_supported_codecs(p_codec_info);
     return;
   }
