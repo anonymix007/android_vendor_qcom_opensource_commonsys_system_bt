@@ -74,6 +74,8 @@
 #include "a2dp_vendor_lhdcv2.h"
 #include "a2dp_vendor_lhdcv3.h"
 #include "a2dp_vendor_lhdcv5.h"
+#include "a2dp_vendor_flac.h"
+//#include "a2dp_vendor_lc3plus.h"
 #include "osi/include/log.h"
 #include "a2dp_vendor_aptx_tws.h"
 #include "device/include/controller.h"
@@ -215,6 +217,13 @@ A2dpCodecConfig* A2dpCodecConfig::createCodec(
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
       codec_config = new A2dpCodecConfigLhdcV5Source(codec_priority);
       break;
+     case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
+      codec_config = new A2dpCodecConfigFlac(codec_priority);
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
+      assert(0 && "Not implemented");
+      //codec_config = new A2dpCodecConfigLC3pluscodec_priority);
+      break;           
     // Add a switch statement for each vendor-specific codec
     case BTAV_A2DP_CODEC_INDEX_MAX:
       break;
@@ -719,6 +728,10 @@ bool A2dpCodecConfig::getCodecSpecificConfig(tBT_A2DP_OFFLOAD* p_a2dp_offload) {
         }
       }
       // Savitech Patch - END
+      
+      else if (vendor_id == A2DP_FLAC_VENDOR_ID && codec_id == A2DP_FLAC_CODEC_ID) { 
+        LOG_DEBUG(LOG_TAG, "%s: [FLAC] Do we need this?", __func__);
+      }
       break;
     default:
       break;
@@ -2154,6 +2167,12 @@ int A2DP_GetTrackBitsPerSample(const uint8_t* p_codec_info) {
       if (vendor_id == A2DP_LHDC_VENDOR_ID && codec_id == A2DP_LHDCV5_CODEC_ID) {
         return A2DP_VendorGetTrackBitsPerSampleLhdcV5(p_codec_info);
       }
+      
+      // Check for FLAC
+      if (vendor_id == A2DP_FLAC_VENDOR_ID && codec_id == A2DP_FLAC_CODEC_ID) {
+        return A2DP_VendorGetTrackBitsPerSampleFlac(p_codec_info);
+      }
+      
     }
      break;
     default:
@@ -2633,8 +2652,13 @@ bool A2DP_IsCodecEnabledInSoftware(btav_a2dp_codec_index_t codec_index) {
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
       codec_status = true;
       break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
+      codec_status = false;
+      assert(0 && "Not implemented");
+      break;  
     case BTAV_A2DP_QVA_CODEC_INDEX_SOURCE_MAX:
     case BTAV_A2DP_CODEC_INDEX_SINK_MAX:
     default:
@@ -2676,6 +2700,14 @@ bool A2DP_IsCodecEnabledInOffload(btav_a2dp_codec_index_t codec_index) {
       LOG_INFO(LOG_TAG,"LHDC not enabled in offload currently");
       codec_status = false;
       break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
+      LOG_INFO(LOG_TAG,"FLAC not enabled in offload currently");
+      codec_status = false;
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
+      LOG_INFO(LOG_TAG,"LC3plus HR not enabled in offload currently");
+      codec_status = false;
+      break;      
     case BTAV_A2DP_QVA_CODEC_INDEX_SOURCE_MAX:
     case BTAV_A2DP_CODEC_INDEX_SINK_MAX:
     default:

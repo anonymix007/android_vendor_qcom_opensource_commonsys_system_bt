@@ -502,6 +502,16 @@ bool a2dp_is_audio_codec_config_params_changed_aidl(
       LOG(ERROR) << __func__
                  << ": Consider changed to LHDC from " << (int) codec_config->codecType;
       break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
+      changed = true;
+      LOG(ERROR) << __func__
+                 << ": Consider changed to FLAC from " << (int) codec_config->codecType;
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
+      changed = true;
+      LOG(ERROR) << __func__
+                 << ": Consider changed to LC3plus HR from " << (int) codec_config->codecType;
+      break;  
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:

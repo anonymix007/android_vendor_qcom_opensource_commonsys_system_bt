@@ -277,6 +277,8 @@ void avdt_ccb_hdl_discover_cmd(tAVDT_CCB* p_ccb, tAVDT_CCB_EVT* p_data) {
   bool ldac_support = false;
   bool aptx_tws_support = false;
   bool lhdc_support = false;
+  bool flac_support = false;
+  bool lc3plus_support = false;
   bool codecs_cached = false;
 
   AVDT_TRACE_WARNING("%s: soc_type: %d", __func__, soc_type);
@@ -351,6 +353,10 @@ void avdt_ccb_hdl_discover_cmd(tAVDT_CCB* p_ccb, tAVDT_CCB_EVT* p_data) {
          aptx_tws_support = true;
        } else if (strncmp(tok,"LHDC", 4) == 0) {
          lhdc_support = true;
+       } else if (strcmp(tok,"FLAC") == 0) {
+         flac_support = true;
+       } else if (strcmp(tok,"LC3plus HR") == 0) {
+         lc3plus_support = true;
        }
        tok = strtok_r(NULL, ",", &tmp_token);
       }
@@ -413,6 +419,18 @@ void avdt_ccb_hdl_discover_cmd(tAVDT_CCB* p_ccb, tAVDT_CCB_EVT* p_data) {
             APPL_TRACE_DEBUG("show support of lhdc");
           } else {
             APPL_TRACE_DEBUG("do not show support of lhdc");
+          }
+        } else if (strcmp(codec_name,"FLAC") == 0) {
+          if (flac_support) {
+            APPL_TRACE_DEBUG("show support of FLAC");
+          } else {
+            APPL_TRACE_DEBUG("do not show support of FLAC");
+          } 
+        } else if (strcmp(codec_name,"LC3plus HR") == 0) {
+          if (lc3plus_support) {
+            APPL_TRACE_DEBUG("show support of LC3plus HR");
+          } else {
+            APPL_TRACE_DEBUG("do not show support of LC3plus HR");
           }
         } else {
           continue;
