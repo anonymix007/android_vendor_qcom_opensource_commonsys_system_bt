@@ -823,7 +823,7 @@ bool a2dp_is_audio_codec_config_params_changed(
       changed = true;
       LOG(ERROR) << __func__
                  << ": Consider changed to LC3plus HR from " << (int) codec_config->codecType;
-      break;  
+      break;
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -1086,7 +1086,7 @@ bool a2dp_is_audio_codec_config_params_changed_2_1(
       changed = true;
       LOG(ERROR) << __func__
                  << ": Consider changed to LC3plus HR from " << (int) codec_config->codecType;
-      break;  
+      break;
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -2488,7 +2488,7 @@ bool is_restart_session_needed() {
         return false;
       }
       btav_a2dp_codec_config_t current_codec = a2dp_codec_configs->getCodecConfig();
-      LOG(ERROR) << __func__ <<  sw_codec_type << " " <<  current_codec.codec_type;
+      LOG(ERROR) << __func__ << " new:" << sw_codec_type << ", old " <<  current_codec.codec_type;
       if(sw_codec_type != current_codec.codec_type) {
         LOG(ERROR) << __func__ << ": codec differed ";
         return true;
@@ -2869,6 +2869,7 @@ SessionType get_session_type() {
     LOG(ERROR) << __func__ << ": BluetoothAudio HAL is not enabled";
     return SessionType::UNKNOWN;
   }
+  LOG(ERROR) << __func__ << ": Session type is " << (int) session_type;
   return session_type;
 }
 

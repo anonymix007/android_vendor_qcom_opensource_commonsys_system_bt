@@ -191,7 +191,7 @@ void btif_ahim_update_current_profile(uint8_t profile)
   BTIF_TRACE_IMP("%s: current active profile is %u", __func__,
                   cur_active_profile);
 }
-void btif_ahim_process_request(tA2DP_CTRL_CMD cmd, uint8_t profile, 
+void btif_ahim_process_request(tA2DP_CTRL_CMD cmd, uint8_t profile,
                                uint8_t direction) {
   std::lock_guard<std::mutex> lock(active_profile_mtx);
   if (btif_ahim_is_aosp_aidl_hal_enabled()) {
@@ -351,6 +351,7 @@ bool btif_ahim_is_hal_2_0_supported() {
 }
 
 bool btif_ahim_is_qc_hal_enabled() {
+  LOG(ERROR) << __func__ << " is_qc_hal_available " << bluetooth::audio::a2dp::is_qc_hal_enabled();
   return bluetooth::audio::a2dp::is_qc_hal_enabled();
 }
 
@@ -359,6 +360,7 @@ bool btif_ahim_is_qc_lea_enabled() {
 }
 
 bool btif_ahim_is_aosp_aidl_hal_enabled() {
+  LOG(ERROR) << __func__ << " is_aidl_hal_available " << bluetooth::audio::aidl::a2dp::is_aidl_hal_available();
   return bluetooth::audio::aidl::a2dp::is_aidl_hal_available();
 }
 
@@ -533,7 +535,7 @@ LeAudioConfiguration fetch_offload_audio_config(int profile, int direction) {
                << frame_duration << ", from leaudio_configs.xml";
   }
   uint8_t encoder_version = 0;
-  
+
 /*if (codec_type == CodecIndex::CODEC_INDEX_SOURCE_APTX_ADAPTIVE_LE ||
       pclient_cbs[profile - 1]->get_is_codec_type_lc3q(direction)) {*/
     VendorConfiguration vendor_config;

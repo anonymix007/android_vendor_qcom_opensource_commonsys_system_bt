@@ -311,7 +311,7 @@ bool a2dp_get_selected_hal_codec_config(CodecConfiguration* codec_config) {
     case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
       break;
      case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
-      break;     
+      break;
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -572,8 +572,13 @@ SessionType get_session_type() {
       return SessionType::UNKNOWN;
     }
     if (active_hal_interface) {
-       return active_hal_interface->GetTransportInstance()->GetSessionType();
-    } else return SessionType::UNKNOWN;
+        SessionType session_type = active_hal_interface->GetTransportInstance()->GetSessionType();
+        LOG(ERROR) << __func__ << ": Session type is " << (int) session_type;
+        return session_type;
+    } else {
+        LOG(ERROR) << __func__ << ": Session type is UNKNOWN";
+        return SessionType::UNKNOWN;
+    }
 }
 
 
@@ -592,7 +597,7 @@ bool is_restart_session_needed() {
       SessionType::A2DP_SOFTWARE_ENCODING_DATAPATH) {
 	  if (a2dp_config != nullptr) {
           btav_a2dp_codec_config_t current_codec = a2dp_config->getCodecConfig();
-          LOG(ERROR) << __func__ <<  sw_codec_type << " " <<  current_codec.codec_type;
+          LOG(ERROR) << __func__ << " old: " << sw_codec_type << ", new: " <<  current_codec.codec_type;
           if(sw_codec_type != current_codec.codec_type) {
             LOG(ERROR) << __func__ << ": codec differed ";
             return true;
@@ -640,7 +645,7 @@ bool setup_codec() {
     }
     pcm_config_global = pcm_config;
     audio_config.set<AudioConfiguration::pcmConfig>(pcm_config);
-    
+
     A2dpCodecConfig* a2dp_codec_configs = bta_av_get_a2dp_current_codec();
     if (a2dp_codec_configs != nullptr) {
       btav_a2dp_codec_config_t current_codec = a2dp_codec_configs->getCodecConfig();
