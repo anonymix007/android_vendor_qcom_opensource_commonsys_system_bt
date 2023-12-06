@@ -2138,11 +2138,11 @@ void bta_av_co_check_and_add_soc_supported_codecs(const uint8_t* p_codec_info) {
       return;
     }
   }
-  
+
   //if (codec_index == BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC) {
   APPL_TRACE_DEBUG("%s: %s Capability:  %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x", __func__, codec_name, p_codec_info[0], p_codec_info[1], p_codec_info[2], p_codec_info[3], p_codec_info[4], p_codec_info[5], p_codec_info[6], p_codec_info[7], p_codec_info[8], p_codec_info[9], p_codec_info[10], p_codec_info[11], p_codec_info[12], p_codec_info[13], p_codec_info[14], p_codec_info[15], p_codec_info[16], p_codec_info[17], p_codec_info[18], p_codec_info[19]);
   //}
-  
+
   if ((strcmp(codec_name,"SBC") == 0) &&
       A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_SBC)) {
     APPL_TRACE_DEBUG("%s: Both SoC and remote supports SBC, append to supported_codecs conf", __func__);
@@ -2209,13 +2209,7 @@ void bta_av_co_check_and_add_soc_supported_codecs(const uint8_t* p_codec_info) {
     bta_av_co_append_to_supported_codecs(p_codec_info);
     return;
   }
-  if ((strcmp(codec_name,"LC3plus HR") == 0) &&
-      A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR)) {
-    APPL_TRACE_DEBUG("%s: Both SoC and remote supports LC3plus HR, append to supported_codecs conf", __func__);
-    bta_av_co_append_to_supported_codecs(p_codec_info);
-    return;
-  }
-  
+
 }
 
 void bta_av_co_append_to_supported_codecs(const uint8_t* p_codec_info) {

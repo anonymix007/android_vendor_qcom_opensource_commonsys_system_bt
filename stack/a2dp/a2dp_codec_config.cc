@@ -75,7 +75,6 @@
 #include "a2dp_vendor_lhdcv3.h"
 #include "a2dp_vendor_lhdcv5.h"
 #include "a2dp_vendor_flac.h"
-//#include "a2dp_vendor_lc3plus.h"
 #include "osi/include/log.h"
 #include "a2dp_vendor_aptx_tws.h"
 #include "device/include/controller.h"
@@ -219,10 +218,6 @@ A2dpCodecConfig* A2dpCodecConfig::createCodec(
       break;
      case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
       codec_config = new A2dpCodecConfigFlac(codec_priority);
-      break;
-    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
-      LOG_DEBUG(LOG_TAG, "%s: LC3plus HR is not implemented yet", __func__);
-      //codec_config = new A2dpCodecConfigLC3plus(codec_priority);
       break;
     // Add a switch statement for each vendor-specific codec
     case BTAV_A2DP_CODEC_INDEX_MAX:
@@ -2655,10 +2650,6 @@ bool A2DP_IsCodecEnabledInSoftware(btav_a2dp_codec_index_t codec_index) {
     case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
       codec_status = true;
       break;
-    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
-      codec_status = false;
-      //assert(0 && "Not implemented");
-      break;
     case BTAV_A2DP_QVA_CODEC_INDEX_SOURCE_MAX:
     case BTAV_A2DP_CODEC_INDEX_SINK_MAX:
     default:
@@ -2702,10 +2693,6 @@ bool A2DP_IsCodecEnabledInOffload(btav_a2dp_codec_index_t codec_index) {
       break;
     case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
       LOG_INFO(LOG_TAG,"FLAC not enabled in offload currently");
-      codec_status = false;
-      break;
-    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
-      LOG_INFO(LOG_TAG,"LC3plus HR not enabled in offload currently");
       codec_status = false;
       break;
     case BTAV_A2DP_QVA_CODEC_INDEX_SOURCE_MAX:

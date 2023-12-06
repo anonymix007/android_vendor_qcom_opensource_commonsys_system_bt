@@ -1015,8 +1015,6 @@ const char* A2DP_VendorCodecIndexStr(btav_a2dp_codec_index_t codec_index) {
     // Savitech Patch - END
     case BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC:
       return A2DP_VendorCodecIndexStrFlac();
-    case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
-      return "LC3plus HR (not yet implemented)";
     // Add a switch statement for each vendor-specific codec
     case BTAV_A2DP_CODEC_INDEX_MAX:
     default:
