@@ -248,7 +248,7 @@ const char *chs[] = {
 #endif
 
 FLAC__StreamEncoderWriteStatus flac_stream_encoder_write_callback(const FLAC__StreamEncoder *encoder, const FLAC__byte buffer[], size_t bytes, uint32_t samples, uint32_t current_frame, void *client_data) {
-  //LOG_DEBUG(LOG_TAG, "%s: FLAC encoded buffer, bytes %lu, samples %u, current_frame %u", __func__, bytes, samples, current_frame);
+  LOG_DEBUG(LOG_TAG, "%s: FLAC encoded buffer, bytes %lu, samples %u, current_frame %u", __func__, bytes, samples, current_frame);
   tA2DP_FLAC_ENCODER_CB *cb = (tA2DP_FLAC_ENCODER_CB *) client_data;
 
   flac_header_t hdr = decode_header(buffer);
@@ -281,7 +281,7 @@ FLAC__StreamEncoderWriteStatus flac_stream_encoder_write_callback(const FLAC__St
     memcpy(cb->pbuf, buffer, bytes);
     cb->written = bytes;//(bytes + 3) & ~0x03;
 #endif
-    LOG_DEBUG(LOG_TAG, "%s: %u bytes written in buffer, orig %zu", __func__, cb->written, bytes);
+    //LOG_DEBUG(LOG_TAG, "%s: %u bytes written in buffer, orig %zu", __func__, cb->written, bytes);
     cb->samples = samples;
     cb->out_frames++;
   } else {
@@ -392,7 +392,16 @@ static void a2dp_vendor_flac_encoder_update(uint16_t peer_mtu,
   btav_a2dp_codec_config_t codec_config = a2dp_codec_config->getCodecConfig();
 
   // TODO: Recalculate block size if changed
-  a2dp_flac_encoder_cb.mix_channels = (codec_config.codec_specific_1 & A2DP_FLAC_STEREO_MONO_MASK) == A2DP_FLAC_MONO;
+  bool mix_channels = (codec_config.codec_specific_1 & A2DP_FLAC_STEREO_MONO_MASK) == A2DP_FLAC_MONO;
+  if (a2dp_flac_encoder_cb.mix_channels != mix_channels) {
+      FLAC__stream_encoder_finish(a2dp_flac_encoder_cb.flac_handle);
+      FLAC__stream_encoder_delete(a2dp_flac_encoder_cb.flac_handle);
+      a2dp_flac_encoder_cb.flac_handle = FLAC__stream_encoder_new();
+      a2dp_flac_encoder_cb.already_init = false;
+      a2dp_flac_encoder_cb.mix_channels = mix_channels;
+      //*p_restart_output = true;
+      //*p_restart_input = true;
+  }
 
   if (a2dp_flac_encoder_cb.already_init) return;
 
@@ -433,15 +442,22 @@ static void a2dp_vendor_flac_encoder_update(uint16_t peer_mtu,
   a2dp_flac_encoder_cb.TxAaMtuSize--;
 #endif
 
-  if (p_encoder_params->block_size != old_block_size)
-    *p_config_updated = true;
-
   p_encoder_params->pcm_bits_per_sample =
       a2dp_flac_encoder_cb.feeding_params.bits_per_sample;
 
+  int channel_count = 2;
+  if (a2dp_flac_encoder_cb.mix_channels) channel_count = 1;
+
+  //TODO: Verbatim frames might not fit
+
   p_encoder_params->block_size = a2dp_flac_encoder_cb.TxAaMtuSize * 8 /
-                                 (p_encoder_params->channel_count *
+                                 (channel_count *
                                   p_encoder_params->pcm_bits_per_sample);
+
+  //if (p_encoder_params->block_size != old_block_size) {
+  //  *p_config_updated = true;
+  //  *p_restart_output = true;
+  //}
 
   LOG_DEBUG(LOG_TAG, "%s: MTU=%d, peer_mtu=%d", __func__,
             a2dp_flac_encoder_cb.TxAaMtuSize, peer_mtu);
