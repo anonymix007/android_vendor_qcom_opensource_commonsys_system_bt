@@ -487,7 +487,7 @@ static tA2DP_STATUS A2DP_ParseInfoLhdcV3(tA2DP_LHDC_CIE* p_ie,
   p_ie->hasFeatureLARC = ((*p_codec_info & A2DP_LHDC_FEATURE_LARC) != 0) ? true : false;
 
   p_ie->hasFeatureLHDCV4 = ((*p_codec_info & A2DP_LHDC_FEATURE_LHDCV4) != 0) ? true : false;
-  
+
   LOG_DEBUG(LOG_TAG, "%s:Has LL(%d) JAS(%d) AR(%d) META(%d) LLAC(%d) MBR(%d) LARC(%d) V4(%d)", __func__,
       p_ie->isLLSupported,
       p_ie->hasFeatureJAS,
@@ -1952,7 +1952,7 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
       (A2DP_LHDC_TO_A2DP_CODEC_CONFIG_|A2DP_LHDC_TO_A2DP_CODEC_SELECT_CAP_|A2DP_LHDC_TO_A2DP_CODEC_CAP_),
       false);
 
-  if (hasFeature /*&& 
+  if (hasFeature /*&&
       (
        (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_48000 && (quality_mode <= A2DP_LHDC_QUALITY_LOW || quality_mode == A2DP_LHDC_QUALITY_ABR)) ||
        (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_44100 && (quality_mode <= A2DP_LHDC_QUALITY_LOW || quality_mode == A2DP_LHDC_QUALITY_ABR))
@@ -2010,7 +2010,7 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
       (A2DP_LHDC_TO_A2DP_CODEC_CONFIG_|A2DP_LHDC_TO_A2DP_CODEC_SELECT_CAP_|A2DP_LHDC_TO_A2DP_CODEC_CAP_),
       false);
 
-  if (hasFeature /*&& 
+  if (hasFeature /*&&
       (
        (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_96000) ||
        (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_48000 && (quality_mode > A2DP_LHDC_QUALITY_LOW && quality_mode != A2DP_LHDC_QUALITY_ABR)) ||
@@ -2444,7 +2444,7 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
       quality_mode = A2DP_LHDC_QUALITY_LOW;
       LOG_DEBUG(LOG_TAG, "%s: [LLAC only]: reset Qmode (0x%x)", __func__, quality_mode);
     }
-    
+
     /* LLAC: prevent quality mode using 64kbps */
     if (result_config_cie.hasFeatureMinBitrate) {
 		if (quality_mode < A2DP_LHDC_QUALITY_LOW1) {
@@ -2480,6 +2480,11 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
       quality_mode,
       lhdcV3_QualityModeBitRate_toString(quality_mode).c_str());
 
+#if 1
+  if (codec_config_.codec_specific_3 != 0)
+    codec_user_config_.codec_specific_3 = codec_config_.codec_specific_3;
+#endif
+
   //
   // Copy the codec-specific fields if they are not zero
   //
@@ -2491,7 +2496,7 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
     codec_config_.codec_specific_3 = codec_user_config_.codec_specific_3;
   if (codec_user_config_.codec_specific_4 != 0)
     codec_config_.codec_specific_4 = codec_user_config_.codec_specific_4;
-  
+
   /* Setup final nego result codec config to peer */
   if (int ret = A2DP_BuildInfoLhdcV3(AVDT_MEDIA_TYPE_AUDIO, &result_config_cie,
                          p_result_codec_config) != A2DP_SUCCESS) {

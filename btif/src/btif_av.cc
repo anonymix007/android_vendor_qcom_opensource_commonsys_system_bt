@@ -6420,10 +6420,10 @@ bool btif_av_is_split_a2dp_enabled() {
     }
 
     if(A2DP_IsCodecEnabledInOffload(a2dpCodecConfig->codecIndex())) {
-      BTIF_TRACE_DEBUG("%s:  going for split ", __func__);
+      BTIF_TRACE_ERROR("%s:  going for split ", __func__);
       return true;
     } else if(A2DP_IsCodecEnabledInSoftware(a2dpCodecConfig->codecIndex())) {
-      BTIF_TRACE_DEBUG("%s:  going for non split ", __func__);
+      BTIF_TRACE_ERROR("%s:  going for non split ", __func__);
       return false;
     } else {
       BTIF_TRACE_ERROR("%s: current codec is not enabled either of modes"

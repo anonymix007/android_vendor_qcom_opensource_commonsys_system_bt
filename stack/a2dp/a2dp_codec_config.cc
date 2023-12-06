@@ -221,9 +221,9 @@ A2dpCodecConfig* A2dpCodecConfig::createCodec(
       codec_config = new A2dpCodecConfigFlac(codec_priority);
       break;
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
-      assert(0 && "Not implemented");
-      //codec_config = new A2dpCodecConfigLC3pluscodec_priority);
-      break;           
+      LOG_DEBUG(LOG_TAG, "%s: LC3plus HR is not implemented yet", __func__);
+      //codec_config = new A2dpCodecConfigLC3plus(codec_priority);
+      break;
     // Add a switch statement for each vendor-specific codec
     case BTAV_A2DP_CODEC_INDEX_MAX:
       break;
@@ -587,7 +587,7 @@ bool A2dpCodecConfig::getCodecSpecificConfig(tBT_A2DP_OFFLOAD* p_a2dp_offload) {
 
         // Version
         if ((codec_config[11] & A2DP_LHDCV5_VERSION_MASK) != A2DP_LHDCV5_VER_1) {
-          LOG_ERROR(LOG_TAG, 
+          LOG_ERROR(LOG_TAG,
               "%s: [LHDC V5] unsupported version 0x%x", __func__,
               (codec_config[11] & A2DP_LHDCV5_VERSION_MASK));
           goto fail;
@@ -728,8 +728,8 @@ bool A2dpCodecConfig::getCodecSpecificConfig(tBT_A2DP_OFFLOAD* p_a2dp_offload) {
         }
       }
       // Savitech Patch - END
-      
-      else if (vendor_id == A2DP_FLAC_VENDOR_ID && codec_id == A2DP_FLAC_CODEC_ID) { 
+
+      else if (vendor_id == A2DP_FLAC_VENDOR_ID && codec_id == A2DP_FLAC_CODEC_ID) {
         LOG_DEBUG(LOG_TAG, "%s: [FLAC] Do we need this?", __func__);
       }
       break;
@@ -925,7 +925,7 @@ bool A2dpCodecConfig::setCodecUserConfig(
 
 bool A2dpCodecConfig::codecConfigIsValid(
     const btav_a2dp_codec_config_t& codec_config) {
-  return 
+  return
         (codec_config.codec_type < BTAV_A2DP_CODEC_INDEX_MAX) &&
          (codec_config.sample_rate != BTAV_A2DP_CODEC_SAMPLE_RATE_NONE) &&
          (codec_config.bits_per_sample !=
@@ -2167,12 +2167,12 @@ int A2DP_GetTrackBitsPerSample(const uint8_t* p_codec_info) {
       if (vendor_id == A2DP_LHDC_VENDOR_ID && codec_id == A2DP_LHDCV5_CODEC_ID) {
         return A2DP_VendorGetTrackBitsPerSampleLhdcV5(p_codec_info);
       }
-      
+
       // Check for FLAC
       if (vendor_id == A2DP_FLAC_VENDOR_ID && codec_id == A2DP_FLAC_CODEC_ID) {
         return A2DP_VendorGetTrackBitsPerSampleFlac(p_codec_info);
       }
-      
+
     }
      break;
     default:
@@ -2657,8 +2657,8 @@ bool A2DP_IsCodecEnabledInSoftware(btav_a2dp_codec_index_t codec_index) {
       break;
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
       codec_status = false;
-      assert(0 && "Not implemented");
-      break;  
+      //assert(0 && "Not implemented");
+      break;
     case BTAV_A2DP_QVA_CODEC_INDEX_SOURCE_MAX:
     case BTAV_A2DP_CODEC_INDEX_SINK_MAX:
     default:
@@ -2707,7 +2707,7 @@ bool A2DP_IsCodecEnabledInOffload(btav_a2dp_codec_index_t codec_index) {
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR:
       LOG_INFO(LOG_TAG,"LC3plus HR not enabled in offload currently");
       codec_status = false;
-      break;      
+      break;
     case BTAV_A2DP_QVA_CODEC_INDEX_SOURCE_MAX:
     case BTAV_A2DP_CODEC_INDEX_SINK_MAX:
     default:

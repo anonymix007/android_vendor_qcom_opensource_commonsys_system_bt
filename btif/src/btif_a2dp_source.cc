@@ -659,7 +659,7 @@ void btif_a2dp_source_stop_audio_req(void) {
   if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     pending_cmd = btif_ahim_get_pending_command(A2DP);
-#else 
+#else
     pending_cmd = bluetooth::audio::a2dp::get_pending_command();
 #endif
   } else {
@@ -1733,8 +1733,8 @@ bool btif_a2dp_source_restart_session(const RawAddress& old_peer_address,
 #endif
   LOG_ERROR(LOG_TAG,
     "%s: old_peer_address=%s new_peer_address=%s is_streaming=%d "
-    "state=%d", __func__, old_peer_address.ToString().c_str(),
-    new_peer_address.ToString().c_str(), is_streaming, btif_a2dp_source_state);
+    "state=%d, session_type %d", __func__, old_peer_address.ToString().c_str(),
+    new_peer_address.ToString().c_str(), is_streaming, btif_a2dp_source_state, session_type);
 
   CHECK(!new_peer_address.IsEmpty());
 
