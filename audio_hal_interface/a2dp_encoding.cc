@@ -2587,6 +2587,7 @@ bool setup_codec() {
            return false;
          }
          audio_config.codecConfig = codec_config;
+         sw_codec_type = BTAV_A2DP_CODEC_INDEX_SOURCE_MIN;
        } else if (session_type == SessionType::A2DP_SOFTWARE_ENCODING_DATAPATH) {
          PcmParameters pcm_config{};
          if (!a2dp_get_selected_hal_pcm_config(&pcm_config)) {
@@ -2618,6 +2619,7 @@ bool setup_codec() {
         return false;
       }
       audio_config.codecConfig = codec_config;
+      sw_codec_type = BTAV_A2DP_CODEC_INDEX_SOURCE_MIN;
     } else if (session_type == SessionType::A2DP_SOFTWARE_ENCODING_DATAPATH) {
       PcmParameters pcm_config{};
       if (!a2dp_get_selected_hal_pcm_config(&pcm_config)) {

@@ -630,6 +630,7 @@ bool setup_codec() {
   if (active_hal_interface->GetTransportInstance()->GetSessionType() ==
       SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH) {
     audio_config.set<AudioConfiguration::a2dpConfig>(codec_config);
+    sw_codec_type = BTAV_A2DP_CODEC_INDEX_SOURCE_MIN;
   } else {
     PcmConfiguration pcm_config{};
     if (!a2dp_get_selected_hal_pcm_config(&pcm_config)) {
