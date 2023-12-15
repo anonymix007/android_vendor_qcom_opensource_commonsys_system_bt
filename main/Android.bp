@@ -117,6 +117,7 @@ cc_library_shared {
     ],
     static_libs: [
         "libFLAC",
+        "liblc3plus_hr",
         "libFraunhoferAAC",
         "libudrv-uipc_qti",
         "libg722codec_qti",
@@ -229,6 +230,7 @@ cc_library_shared {
     ],
     static_libs: [
         "libFLAC",
+        "liblc3plus_hr",
         "libFraunhoferAAC",
         "libudrv-uipc_qti",
         "libg722codec_qti",

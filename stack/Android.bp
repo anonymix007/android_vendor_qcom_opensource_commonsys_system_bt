@@ -72,6 +72,7 @@ cc_library_static {
     header_libs: [
         "libbluetooth_headers",
         "libFLAC-headers",
+        "liblc3-headers",
     ],
     include_dirs: [
         "external/aac/libAACenc/include",
@@ -135,6 +136,8 @@ cc_library_static {
         //"a2dp/a2dp_vendor_lhdcv5_decoder.cc",
         "a2dp/a2dp_vendor_flac.cc",
         "a2dp/a2dp_vendor_flac_encoder.cc",
+        "a2dp/a2dp_vendor_lc3plus_hr.cc",
+        "a2dp/a2dp_vendor_lc3plus_hr_encoder.cc",
         "avct/avct_api.cc",
         "avct/avct_bcb_act.cc",
         "avct/avct_ccb.cc",

@@ -2203,9 +2203,15 @@ void bta_av_co_check_and_add_soc_supported_codecs(const uint8_t* p_codec_info) {
     bta_av_co_append_to_supported_codecs(p_codec_info);
     return;
   }
-   if ((strcmp(codec_name,"FLAC") == 0) &&
+  if ((strcmp(codec_name,"FLAC") == 0) &&
       A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC)) {
     APPL_TRACE_DEBUG("%s: Both SoC and remote supports FLAC, append to supported_codecs conf", __func__);
+    bta_av_co_append_to_supported_codecs(p_codec_info);
+    return;
+  }
+  if ((strcmp(codec_name,"LC3plus HR") == 0) &&
+      A2DP_IsCodecEnabled(BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR)) {
+    APPL_TRACE_DEBUG("%s: Both SoC and remote supports LC3plus HR, append to supported_codecs conf", __func__);
     bta_av_co_append_to_supported_codecs(p_codec_info);
     return;
   }
