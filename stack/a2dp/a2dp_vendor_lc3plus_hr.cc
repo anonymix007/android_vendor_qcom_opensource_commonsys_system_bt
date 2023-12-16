@@ -1343,9 +1343,9 @@ bool A2dpCodecConfigLC3plusHR::setCodecConfig(const uint8_t* p_peer_codec_info,
      __func__,  codec_user_config_.codec_specific_1,
      codec_user_config_.codec_specific_2, codec_user_config_.codec_specific_3,
      codec_user_config_.codec_specific_4);
-  if (codec_user_config_.codec_specific_1 != 0)
-    codec_config_.codec_specific_1 = codec_user_config_.codec_specific_1;
-  //if (codec_user_config_.codec_specific_2 != 0)
+  //if (codec_user_config_.codec_specific_1 != 0) // 0 is a valid bitrate value
+  codec_config_.codec_specific_1 = codec_user_config_.codec_specific_1;
+  //if (codec_user_config_.codec_specific_2 != 0) // already set by now
   //  codec_config_.codec_specific_2 = codec_user_config_.codec_specific_2;
   if (codec_user_config_.codec_specific_3 != 0)
     codec_config_.codec_specific_3 = codec_user_config_.codec_specific_3;
