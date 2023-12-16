@@ -73,7 +73,7 @@ static const tA2DP_LC3PLUS_HR_CIE a2dp_lc3plus_hr_src_default_config = {
     A2DP_LC3PLUS_HR_SAMPLING_RATE_48000,  // sampleRate
     A2DP_LC3PLUS_HR_CHANNEL_MODE_STEREO,// channelMode
     A2DP_LC3PLUS_HR_FRAME_DURATION_050_MS,
-    BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32, // bits_per_sample
+    BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24, // bits_per_sample
 };
 
 tA2DP_LC3PLUS_HR_CIE a2dp_lc3plus_hr_default_config;
@@ -502,6 +502,20 @@ bool A2DP_VendorBuildCodecHeaderLC3plusHR(UNUSED_ATTR const uint8_t* p_codec_inf
   p_buf->len += A2DP_LC3PLUS_HR_MPL_HDR_LEN;
   A2DP_BuildMediaPayloadHeaderLC3plusHR(p, false, false, false,
                                    (uint8_t)frames_per_packet);
+
+  return true;
+}
+
+bool A2DP_VendorBuildCodecHeaderLC3plusHR(UNUSED_ATTR const uint8_t* p_codec_info,
+                                     BT_HDR* p_buf, bool frag, bool start,
+                                     bool last, uint16_t fragments) {
+  uint8_t* p;
+
+  p_buf->offset -= A2DP_LC3PLUS_HR_MPL_HDR_LEN;
+  p = (uint8_t*)(p_buf + 1) + p_buf->offset;
+  p_buf->len += A2DP_LC3PLUS_HR_MPL_HDR_LEN;
+  A2DP_BuildMediaPayloadHeaderLC3plusHR(p, frag, start, last,
+                                   (uint8_t)fragments);
 
   return true;
 }
@@ -980,7 +994,7 @@ bool A2dpCodecConfigLC3plusHR::setCodecConfig(const uint8_t* p_peer_codec_info,
     goto fail;
   }
 
-   LOG_DEBUG(LOG_TAG, "%s: is_capability: %d", __func__, is_capability);
+  LOG_DEBUG(LOG_TAG, "%s: is_capability: %d", __func__, is_capability);
   //
   // Build the preferred configuration
   //
@@ -993,16 +1007,19 @@ bool A2dpCodecConfigLC3plusHR::setCodecConfig(const uint8_t* p_peer_codec_info,
   //
   sampleRate = a2dp_lc3plus_hr_caps.sampleRate & sink_info_cie.sampleRate;
   codec_config_.sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_NONE;
+
+  LOG_DEBUG(LOG_TAG, "%s: caps sampleRate: %d, user sampleRate: %d", __func__, sampleRate, codec_user_config_.sample_rate);
+
   switch (codec_user_config_.sample_rate) {
     case BTAV_A2DP_CODEC_SAMPLE_RATE_48000:
-      if (sampleRate & BTAV_A2DP_CODEC_SAMPLE_RATE_48000) {
+      if (sampleRate & A2DP_LC3PLUS_HR_SAMPLING_RATE_48000) {
         result_config_cie.sampleRate = A2DP_LC3PLUS_HR_SAMPLING_RATE_48000;
         codec_capability_.sample_rate = codec_user_config_.sample_rate;
         codec_config_.sample_rate = codec_user_config_.sample_rate;
       }
       break;
     case BTAV_A2DP_CODEC_SAMPLE_RATE_96000:
-      if (sampleRate & BTAV_A2DP_CODEC_SAMPLE_RATE_96000) {
+      if (sampleRate & A2DP_LC3PLUS_HR_SAMPLING_RATE_96000) {
         result_config_cie.sampleRate = A2DP_LC3PLUS_HR_SAMPLING_RATE_96000;
         codec_capability_.sample_rate = codec_user_config_.sample_rate;
         codec_config_.sample_rate = codec_user_config_.sample_rate;

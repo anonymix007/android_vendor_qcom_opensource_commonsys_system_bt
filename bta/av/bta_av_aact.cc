@@ -78,6 +78,7 @@
 #include "btm_int.h"
 #include "device/include/controller.h"
 #include "a2dp_sbc.h"
+#include "a2dp_vendor_lc3plus_hr.h"
 #include "btif/include/btif_a2dp_source.h"
 #include "btif/include/btif_av.h"
 #include "btif/include/btif_hf.h"
@@ -2937,6 +2938,11 @@ void bta_av_data_path(tBTA_AV_SCB* p_scb, UNUSED_ATTR tBTA_AV_DATA* p_data) {
         extra_fragments_n = (p_buf->len / p_scb->stream_mtu) +
                             ((p_buf->len % p_scb->stream_mtu) ? 1 : 0) - 1;
       }
+
+      bool is_lc3plus = A2DP_VendorIsCodecConfigMatchLC3plusHR(p_scb->cfg.codec_info) == A2DP_SUCCESS;
+
+      APPL_TRACE_DEBUG("%s: extra_fragments_n: %zu, is LC3plus HR: %s", __func__, extra_fragments_n, is_lc3plus ? "true" : "false");
+
       std::vector<BT_HDR*> extra_fragments;
       extra_fragments.reserve(extra_fragments_n);
 
@@ -2951,9 +2957,16 @@ void bta_av_data_path(tBTA_AV_SCB* p_scb, UNUSED_ATTR tBTA_AV_DATA* p_data) {
         p_buf2->offset = p_buf->offset;
         p_buf2->len = 0;
         p_buf2->layer_specific = 0;
+
+        if (is_lc3plus && extra_fragments.size() > 0) {
+            p_buf2->offset++;
+        }
+
         uint8_t* packet2 =
             (uint8_t*)(p_buf2 + 1) + p_buf2->offset + p_buf2->len;
         memcpy(packet2, data_begin, fragment_len);
+        APPL_TRACE_DEBUG("%s: fragment %zu, len %zu", __func__, extra_fragments.size(), fragment_len);
+
         p_buf2->len += fragment_len;
         extra_fragments.push_back(p_buf2);
         p_buf->len -= fragment_len;
@@ -2966,13 +2979,34 @@ void bta_av_data_path(tBTA_AV_SCB* p_scb, UNUSED_ATTR tBTA_AV_DATA* p_data) {
         // Reset the RTP Marker bit for all fragments except the last one
         m_pt &= ~AVDT_MARKER_SET;
       }
+
+      if (is_lc3plus && !extra_fragments.empty()) {
+          p_buf->offset += A2DP_LC3PLUS_HR_MPL_HDR_LEN;
+          p_buf->len -= A2DP_LC3PLUS_HR_MPL_HDR_LEN;
+
+          A2DP_VendorBuildCodecHeaderLC3plusHR(p_scb->cfg.codec_info, p_buf,
+                                               true, true, false, extra_fragments.size() + 1);
+      }
+
       AVDT_WriteReqOpt(p_scb->avdt_handle, p_buf, timestamp, m_pt, opt);
       for (size_t i = 0; i < extra_fragments.size(); i++) {
         if (i + 1 == extra_fragments.size()) {
           // Set the RTP Marker bit for the last fragment
           m_pt |= AVDT_MARKER_SET;
         }
+
         BT_HDR* p_buf2 = extra_fragments[i];
+
+        if (is_lc3plus) {
+            if (i == extra_fragments.size() - 1) {
+                A2DP_VendorBuildCodecHeaderLC3plusHR(p_scb->cfg.codec_info, p_buf2,
+                                               true, false, true, 1);
+            } else {
+                A2DP_VendorBuildCodecHeaderLC3plusHR(p_scb->cfg.codec_info, p_buf2,
+                                               true, false, false, extra_fragments.size() - i);
+            }
+        }
+
         AVDT_WriteReqOpt(p_scb->avdt_handle, p_buf2, timestamp, m_pt, opt);
       }
       p_scb->cong = true;

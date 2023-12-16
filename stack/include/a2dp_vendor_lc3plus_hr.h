@@ -132,6 +132,10 @@ bool A2DP_VendorGetPacketTimestampLC3plusHR(const uint8_t* p_codec_info,
 bool A2DP_VendorBuildCodecHeaderLC3plusHR(const uint8_t* p_codec_info, BT_HDR* p_buf,
                                      uint16_t frames_per_packet);
 
+bool A2DP_VendorBuildCodecHeaderLC3plusHR(const uint8_t* p_codec_info,
+                                     BT_HDR* p_buf, bool frag, bool start,
+                                     bool last, uint16_t fragments);
+
 // Decodes and displays A2DP LC3plus HR codec info when using |LOG_DEBUG|.
 // |p_codec_info| is a pointer to the LC3plusHR codec_info to decode and display.
 // Returns true if the codec information is valid, otherwise false.
