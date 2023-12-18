@@ -111,8 +111,14 @@ typedef struct {
 
   a2dp_lc3plus_hr_encoder_stats_t stats;
 
-  uint8_t encoded_buf[2048];
-  uint32_t encoded_offset;
+  struct {
+    uint8_t data[4096];
+    unsigned offset;
+    unsigned nbytes;
+    unsigned current_bitrate;
+    unsigned frames;
+    unsigned target_frames;
+  } enc_buf;
 
 #ifdef LC3PLUS_HR_SAVE_DUMP
   FILE *recFile;
@@ -121,6 +127,132 @@ typedef struct {
 } tA2DP_LC3PLUS_HR_ENCODER_CB;
 
 static tA2DP_LC3PLUS_HR_ENCODER_CB a2dp_lc3plus_hr_encoder_cb;
+
+static uint32_t a2dp_lc3plus_hr_block_size(void) {
+  return a2dp_lc3plus_hr_encoder_cb.encoder->GetFrameSamples() *
+         a2dp_lc3plus_hr_encoder_cb.feeding_params.channel_count *
+         a2dp_lc3plus_hr_encoder_cb.feeding_params.bits_per_sample / 8;
+}
+
+static uint32_t a2dp_lc3plus_hr_frame_samples(void) {
+  return a2dp_lc3plus_hr_encoder_cb.encoder->GetFrameSamples();
+}
+
+static uint32_t a2dp_lc3plus_hr_timestamp_increment(void) {
+  return a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.tsi;
+}
+
+static uint32_t a2dp_lc3plus_hr_frame_per_packet(void) {
+    return A2DP_LC3PLUS_HR_ENCODER_INTERVAL_MS / a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.frame_ms;
+}
+
+static uint32_t a2dp_lc3plus_hr_resolve_bitrate() {
+  const uint32_t bitrate = a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.bitrate;
+  const uint32_t abr_bitrate = a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.abr_bitrate;
+  //LOG_INFO(LOG_TAG, "%s: bitrate: %" PRIu32 ", abr: %" PRIu32, __func__, bitrate, abr_bitrate);
+  return bitrate == 0 ? abr_bitrate : bitrate;
+}
+
+static bool a2dp_lc3plus_hr_enc_buf_ready() {
+  auto &buf = a2dp_lc3plus_hr_encoder_cb.enc_buf;
+  return buf.frames == buf.target_frames;
+}
+
+static bool a2dp_lc3plus_hr_enc_buf_should_update() {
+  return a2dp_lc3plus_hr_encoder_cb.enc_buf.frames == 0;
+}
+
+static void a2dp_lc3plus_hr_enc_buf_update() {
+  auto &buf = a2dp_lc3plus_hr_encoder_cb.enc_buf;
+  auto &encoder = *a2dp_lc3plus_hr_encoder_cb.encoder;
+  auto &params = a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params;
+
+  if (a2dp_lc3plus_hr_encoder_cb.encoder != nullptr) {
+    unsigned current_bitrate = a2dp_lc3plus_hr_resolve_bitrate();
+    if (current_bitrate == buf.current_bitrate) {
+      return;
+    }
+    buf.current_bitrate = current_bitrate;
+    unsigned channels = params.channel_count;
+    buf.nbytes = encoder.GetFrameBytes(current_bitrate / channels);
+    LOG_INFO(LOG_TAG, "%s: channels %u, nbytes %u", __func__, channels, buf.nbytes);
+    unsigned frame_data_block = buf.nbytes * channels;
+    if (a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize < frame_data_block) {
+      LOG_INFO(LOG_TAG, "%s: fragmenting frame data block %u", __func__, frame_data_block);
+      buf.target_frames = 1;
+    } else {
+      buf.target_frames = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize / frame_data_block;
+      unsigned limit_frames = A2DP_LC3PLUS_HR_ENCODER_INTERVAL_MS / params.frame_ms;
+      if (buf.target_frames > limit_frames) {
+        buf.target_frames = limit_frames;
+      }
+      LOG_INFO(LOG_TAG, "%s: target frames %u", __func__, buf.target_frames);
+    }
+  } else {
+    buf.target_frames = 1;
+    buf.nbytes = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize / params.channel_count;
+  }
+}
+
+static void a2dp_lc3plus_hr_enc_buf_reset() {
+  auto &buf = a2dp_lc3plus_hr_encoder_cb.enc_buf;
+  buf.offset = 0;
+  buf.frames = 0;
+  buf.target_frames = 0;
+  buf.nbytes = 0;
+  buf.current_bitrate = 0;
+  a2dp_lc3plus_hr_enc_buf_update();
+}
+
+static int a2dp_lc3plus_hr_enc_buf_encode(void *pcm) {
+  auto &buf = a2dp_lc3plus_hr_encoder_cb.enc_buf;
+  auto &encoder = *a2dp_lc3plus_hr_encoder_cb.encoder;
+  auto &params = a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params;
+
+  uint8_t *out_ptr = buf.data + buf.offset;
+
+#ifdef LC3PLUS_HR_SAVE_DUMP
+  if (a2dp_lc3plus_hr_encoder_cb.pcmFile != NULL) {
+      fwrite(pcm, sizeof(uint8_t), a2dp_lc3plus_hr_block_size(), a2dp_lc3plus_hr_encoder_cb.pcmFile);
+  }
+#endif
+
+  int result = encoder.Encode(params.fmt, pcm, buf.nbytes, out_ptr);
+
+  if (result == 0) {
+#ifdef LC3PLUS_HR_SAVE_DUMP
+    if (a2dp_lc3plus_hr_encoder_cb.recFile != NULL) {
+      uint16_t size = buf.nbytes * params.channel_count;
+      fwrite(&size, sizeof(size), 1, a2dp_lc3plus_hr_encoder_cb.recFile);
+      fwrite(out_ptr, sizeof(uint8_t), size, a2dp_lc3plus_hr_encoder_cb.recFile);
+    }
+#endif
+
+    buf.offset += buf.nbytes * params.channel_count;
+    buf.frames++;
+  }
+
+  return result;
+}
+
+static uint32_t a2dp_lc3plus_hr_enc_buf_written() {
+    return a2dp_lc3plus_hr_encoder_cb.enc_buf.offset;
+}
+
+static uint32_t a2dp_lc3plus_hr_enc_buf_frames() {
+    return a2dp_lc3plus_hr_encoder_cb.enc_buf.frames;
+}
+
+static uint32_t a2dp_lc3plus_hr_enc_buf_target() {
+    return a2dp_lc3plus_hr_encoder_cb.enc_buf.target_frames;
+}
+
+static void a2dp_lc3plus_hr_enc_buf_move_packet(uint8_t *dst) {
+  auto &buf = a2dp_lc3plus_hr_encoder_cb.enc_buf;
+  memcpy(dst, buf.data, buf.offset);
+  buf.offset = 0;
+  buf.frames = 0;
+}
 
 static void a2dp_vendor_lc3plus_hr_encoder_update(uint16_t peer_mtu,
                                             A2dpCodecConfig* a2dp_codec_config,
@@ -150,6 +282,7 @@ void a2dp_vendor_lc3plus_hr_encoder_init(
     a2dp_source_enqueue_callback_t enqueue_callback) {
   if (a2dp_lc3plus_hr_encoder_cb.has_lc3plus_hr_handle) {
       delete a2dp_lc3plus_hr_encoder_cb.encoder;
+      a2dp_lc3plus_hr_encoder_cb.has_lc3plus_hr_handle = false;
   }
   memset(&a2dp_lc3plus_hr_encoder_cb, 0, sizeof(a2dp_lc3plus_hr_encoder_cb));
 
@@ -288,7 +421,7 @@ static void a2dp_vendor_lc3plus_hr_encoder_update(uint16_t peer_mtu,
       delete a2dp_lc3plus_hr_encoder_cb.encoder;
       a2dp_lc3plus_hr_encoder_cb.has_lc3plus_hr_handle = true;
     }
-    a2dp_lc3plus_hr_encoder_cb.encoded_offset = 0;
+    a2dp_lc3plus_hr_enc_buf_reset();
     a2dp_lc3plus_hr_encoder_cb.encoder = new lc3::Encoder(p_encoder_params->frame_ms*1000, p_encoder_params->sample_rate, 0, p_encoder_params->channel_count, true);
     if (a2dp_lc3plus_hr_encoder_cb.encoder == nullptr) {
         LOG_ERROR(LOG_TAG, "%s: Cannot get LC3plus HR encoder handle", __func__);
@@ -301,20 +434,45 @@ static void a2dp_vendor_lc3plus_hr_encoder_update(uint16_t peer_mtu,
   LOG_DEBUG(LOG_TAG,
             "%s: sample_rate: %d channel_count: %d "
             "bits_per_sample: %d ",
-            "frame_ms: %f ",
+            "frame_dms: %d ",
             "pcm_fmt: %d ",
             "bitrate: %d",
             __func__, p_encoder_params->sample_rate,
             p_encoder_params->channel_count,
             p_encoder_params->bits_per_sample,
-            p_encoder_params->frame_ms,
+            (int) (p_encoder_params->frame_ms * 10),
             p_encoder_params->fmt,
             p_encoder_params->bitrate);
 
 #ifdef LC3PLUS_HR_SAVE_DUMP
   if (a2dp_lc3plus_hr_encoder_cb.recFile == NULL) {
-    a2dp_lc3plus_hr_encoder_cb.recFile = fopen(ENC_RAW_NAME,"wb");
+    a2dp_lc3plus_hr_encoder_cb.recFile = fopen(ENC_RAW_NAME, "wb");
     LOG_DEBUG(LOG_TAG, "%s: create recFile = %p", __func__, a2dp_lc3plus_hr_encoder_cb.recFile);
+  }
+  if (a2dp_lc3plus_hr_encoder_cb.recFile != NULL) {
+    struct lc3bin_header {
+      uint16_t file_id;
+      uint16_t header_size;
+      uint16_t srate_100hz;
+      uint16_t bitrate_100bps;
+      uint16_t channels;
+      uint16_t frame_10us;
+      uint16_t rfu;
+      uint16_t nsamples_low;
+      uint16_t nsamples_high;
+      uint16_t hrmode;
+    } hdr = {
+      .file_id = (0x1C | (0xCC << 8)),
+      .header_size = sizeof(hdr),
+      .srate_100hz = (uint16_t) (p_encoder_params->sample_rate / 100),
+      .bitrate_100bps = (uint16_t) (p_encoder_params->bitrate / 100),
+      .channels = (uint16_t) (p_encoder_params->channel_count),
+      .frame_10us = (uint16_t) (p_encoder_params->frame_ms*100),
+      .nsamples_low = 0,
+      .nsamples_high = 0,
+      .hrmode = true,
+    };
+    fwrite(&hdr, sizeof(hdr), 1, a2dp_lc3plus_hr_encoder_cb.recFile);
   }
   if (a2dp_lc3plus_hr_encoder_cb.pcmFile == NULL) {
     a2dp_lc3plus_hr_encoder_cb.pcmFile = fopen(ENC_PCM_NAME,"wb");
@@ -383,25 +541,6 @@ void a2dp_vendor_lc3plus_hr_send_frames(uint64_t timestamp_us) {
   }
 }
 
-static uint32_t a2dp_lc3plus_hr_block_size(void) {
-  return a2dp_lc3plus_hr_encoder_cb.encoder->GetFrameSamples() *
-         a2dp_lc3plus_hr_encoder_cb.feeding_params.channel_count *
-         a2dp_lc3plus_hr_encoder_cb.feeding_params.bits_per_sample / 8;
-}
-
-static uint32_t a2dp_lc3plus_hr_frame_samples(void) {
-  return a2dp_lc3plus_hr_encoder_cb.encoder->GetFrameSamples();
-}
-
-static uint32_t a2dp_lc3plus_hr_timestamp_increment(void) {
-  return a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.tsi;
-}
-
-static uint32_t a2dp_lc3plus_hr_frame_per_packet(void) {
-    return A2DP_LC3PLUS_HR_ENCODER_INTERVAL_MS / a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.frame_ms;
-}
-
-
 // Obtains the number of frames to send and number of iterations
 // to be used. |num_of_iterations| and |num_of_frames| parameters
 // are used as output param for returning the respective values.
@@ -443,35 +582,15 @@ static void a2dp_lc3plus_hr_get_num_frame_iteration(uint8_t* num_of_iterations,
   *num_of_iterations = noi;
 }
 
-static uint32_t a2dp_lc3plus_hr_resolve_bitrate() {
-    const uint32_t bitrate = a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.bitrate;
-    const uint32_t abr_bitrate = a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params.abr_bitrate;
-    LOG_INFO(LOG_TAG, "%s: bitrate: %" PRIu32 ", abr: %" PRIu32, __func__, bitrate, abr_bitrate);
-    return bitrate == 0 ? abr_bitrate : bitrate;
-}
-
 static void a2dp_lc3plus_hr_encode_frames(uint8_t nb_frame) {
   tA2DP_LC3PLUS_HR_ENCODER_PARAMS* p_encoder_params =
       &a2dp_lc3plus_hr_encoder_cb.lc3plus_hr_encoder_params;
   uint8_t remain_nb_frame = nb_frame;
   uint8_t read_buffer[1920 * sizeof(int32_t) * 2 /* ch */];
 
-  uint8_t *out_ptr = a2dp_lc3plus_hr_encoder_cb.encoded_buf + a2dp_lc3plus_hr_encoder_cb.encoded_offset;
-  uint32_t lc3plus_frames = 0;
-  uint32_t nbytes = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize;
-
-  if (a2dp_lc3plus_hr_encoder_cb.encoder != nullptr) {
-      uint32_t current_bitrate = a2dp_lc3plus_hr_resolve_bitrate() / p_encoder_params->channel_count;
-      //LOG_DEBUG(LOG_TAG, "%s: got bitrate per channel: %" PRIu32 ", getting nbytes per channel...", __func__, current_bitrate);
-      nbytes = a2dp_lc3plus_hr_encoder_cb.encoder->GetFrameBytes(current_bitrate);
-      //LOG_DEBUG(LOG_TAG, "%s: got nbytes per channel: %" PRIu32, __func__, nbytes);
-  }
-
   uint32_t count;
   int32_t out_frames = 0;
   int written = 0;
-
-  uint32_t target_frames = a2dp_lc3plus_hr_frame_per_packet();
 
   uint32_t bytes_read = 0;
   while (nb_frame) {
@@ -480,9 +599,6 @@ static void a2dp_lc3plus_hr_encode_frames(uint8_t nb_frame) {
     p_buf->offset = A2DP_LC3PLUS_HR_OFFSET;
     p_buf->len = 0;
     p_buf->layer_specific = 0;
-    lc3plus_frames = 0;
-    out_ptr = a2dp_lc3plus_hr_encoder_cb.encoded_buf;
-    a2dp_lc3plus_hr_encoder_cb.encoded_offset = 0;
     a2dp_lc3plus_hr_encoder_cb.stats.media_read_total_expected_packets++;
     //LOG_DEBUG(LOG_TAG, "%s: starting encoding loop, nb_frame: %d", __func__, nb_frame);
 
@@ -505,37 +621,31 @@ static void a2dp_lc3plus_hr_encode_frames(uint8_t nb_frame) {
         written = 0;
         out_frames = 0;
 
-#ifdef LC3PLUS_HR_SAVE_DUMP
-        if (a2dp_lc3plus_hr_encoder_cb.pcmFile != NULL) {
-          fwrite(read_buffer, sizeof(uint8_t), temp_bytes_read, a2dp_lc3plus_hr_encoder_cb.pcmFile);
+        if (a2dp_lc3plus_hr_enc_buf_should_update()) {
+          a2dp_lc3plus_hr_enc_buf_update();
         }
-#endif
-        int result = a2dp_lc3plus_hr_encoder_cb.encoder->Encode(p_encoder_params->fmt, (void *) read_buffer, nbytes, out_ptr);
-        if (result == 0) {
-          out_ptr += nbytes * p_encoder_params->channel_count;
-          a2dp_lc3plus_hr_encoder_cb.encoded_offset += nbytes * p_encoder_params->channel_count;
-          lc3plus_frames++;
-          //LOG_INFO(LOG_TAG, "%s: LC3plus HR encoding OK, written %d, out_frames %d!", __func__, nbytes * lc3plus_frames * p_encoder_params->channel_count, lc3plus_frames);
-        } else {
-          LOG_ERROR(LOG_TAG,
-                    "%s: LC3plus HR encoding error: %d, dropping %d encoded bytes",
-                    __func__, result, nbytes * lc3plus_frames);
+        int result = a2dp_lc3plus_hr_enc_buf_encode((void *) read_buffer);
+        if (result != 0) {
+          LOG_ERROR(LOG_TAG, "%s: LC3plus HR encoding error: %d", __func__, result);
           a2dp_lc3plus_hr_encoder_cb.stats.media_read_total_dropped_packets++;
           osi_free(p_buf);
           return;
+        } else {
+            LOG_DEBUG(LOG_TAG, "%s: LC3plus HR encoding OK", __func__);
         }
 
-        if (nbytes * p_encoder_params->channel_count * (lc3plus_frames + 1) >= a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize || target_frames == lc3plus_frames || (nb_frame == 1 && lc3plus_frames > 0)) {
-            LOG_INFO(LOG_TAG, "%s: LC3plus HR encoded full packet: written %d, out_frames %d!", __func__, nbytes * lc3plus_frames * p_encoder_params->channel_count, lc3plus_frames);
-            written = nbytes * lc3plus_frames * p_encoder_params->channel_count;
-            out_frames = lc3plus_frames;
-            uint8_t* packet = (uint8_t*)(p_buf + 1) + p_buf->offset + p_buf->len;
-            out_ptr = a2dp_lc3plus_hr_encoder_cb.encoded_buf;
-            a2dp_lc3plus_hr_encoder_cb.encoded_offset = 0;
-            lc3plus_frames = 0;
-            memcpy(packet, a2dp_lc3plus_hr_encoder_cb.encoded_buf, written);
+        if (a2dp_lc3plus_hr_enc_buf_ready() /*|| nb_frame == 1*/) {
+          written = a2dp_lc3plus_hr_enc_buf_written();
+          out_frames = a2dp_lc3plus_hr_enc_buf_frames();
+          const unsigned target = a2dp_lc3plus_hr_encoder_cb.enc_buf.target_frames;
+          LOG_INFO(LOG_TAG, "%s: LC3plus HR encoded full packet: written %u, out_frames/target %u/%u!", __func__, written, out_frames, target);
+          uint8_t *packet = (uint8_t*)(p_buf + 1) + p_buf->offset + p_buf->len;
+          a2dp_lc3plus_hr_enc_buf_move_packet(packet);
         } else {
-            //LOG_INFO(LOG_TAG, "%s: LC3plus HR packet left space: %d!", __func__, a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize - nbytes * lc3plus_frames * p_encoder_params->channel_count);
+          const int space = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize - a2dp_lc3plus_hr_enc_buf_written();
+          const int frames = a2dp_lc3plus_hr_encoder_cb.enc_buf.frames;
+          const int target = a2dp_lc3plus_hr_encoder_cb.enc_buf.target_frames;
+          LOG_INFO(LOG_TAG, "%s: LC3plus HR packet left space: %d, frames/target %d/%d", __func__, space, frames, target);
         }
 
         count += written;
@@ -594,6 +704,7 @@ static bool a2dp_lc3plus_hr_read_feeding(uint8_t* read_buffer, uint32_t* bytes_r
     if (nb_byte_read == 0) return false;
 
     /* Fill the unfilled part of the read buffer with silence (0) */
+    LOG_INFO(LOG_TAG, "%s: filling %zu pcm bytes with 0", __func__, read_size - nb_byte_read);
     memset(((uint8_t*)read_buffer) + nb_byte_read, 0, read_size - nb_byte_read);
     nb_byte_read = read_size;
   }
