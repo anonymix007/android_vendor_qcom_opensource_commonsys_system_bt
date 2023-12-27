@@ -410,7 +410,7 @@ static void a2dp_vendor_lc3plus_hr_encoder_update(uint16_t peer_mtu,
   switch (p_encoder_params->bits_per_sample) {
       case 16: p_encoder_params->fmt = lc3::PcmFormat::kS16; break;
       case 24: p_encoder_params->fmt = lc3::PcmFormat::kS24In3Le; break;
-      case 32: p_encoder_params->fmt = lc3::PcmFormat::kS32; break;
+      //case 32: p_encoder_params->fmt = lc3::PcmFormat::kS32; break;
   }
 
   if (p_encoder_params->frame_ms != old_frame_ms || p_encoder_params->sample_rate != old_sample_rate) {

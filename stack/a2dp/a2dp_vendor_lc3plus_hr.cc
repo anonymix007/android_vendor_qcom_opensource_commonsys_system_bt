@@ -62,8 +62,7 @@ static const tA2DP_LC3PLUS_HR_CIE a2dp_lc3plus_hr_caps = {
      A2DP_LC3PLUS_HR_FRAME_DURATION_025_MS),
     // bits_per_sample
     (BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16 |
-     BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24 |
-     BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32)
+     BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24)
 };
 
 /* Default LC3plus HR codec configuration */
@@ -193,8 +192,8 @@ static tA2DP_STATUS A2DP_ParseInfoLC3plusHR(tA2DP_LC3PLUS_HR_CIE* p_ie,
   p_ie->sampleRate &= A2DP_LC3PLUS_HR_SAMPLING_RATE_MASK;
   p_ie->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_NONE;
 
-  if (*p_codec_info & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32)
-    p_ie->bits_per_sample |= BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
+  //if (*p_codec_info & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32)
+  //  p_ie->bits_per_sample |= BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
   if (*p_codec_info & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24)
     p_ie->bits_per_sample |= BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24;
   if (*p_codec_info & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16)
@@ -429,13 +428,15 @@ int A2DP_VendorGetTrackBitsPerSampleLC3plusHR(const uint8_t* p_codec_info) {
     return -1;
   }
 
-  switch (lc3plus_hr_cie.sampleRate) {
+  switch (lc3plus_hr_cie.bits_per_sample) {
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16:
       return 16;
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24:
       return 24;
-    case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32:
-      return 32;
+    //case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32:
+    //  return 32;
+    default:
+      return -1;
   }
 
   return -1;
@@ -566,9 +567,9 @@ bool A2DP_VendorDumpCodecInfoLC3plusHR(const uint8_t* p_codec_info) {
   if (lc3plus_hr_cie.bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24) {
     LOG_VERBOSE(LOG_TAG, "\tch_mode: (24)");
   }
-  if (lc3plus_hr_cie.bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
-    LOG_VERBOSE(LOG_TAG, "\tch_mode: (32)");
-  }
+  //if (lc3plus_hr_cie.bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
+  //  LOG_VERBOSE(LOG_TAG, "\tch_mode: (32)");
+  //}
   return true;
 }
 
@@ -754,11 +755,11 @@ static bool select_audio_sample_rate(
 static bool select_best_bits_per_sample(
     btav_a2dp_codec_bits_per_sample_t bits_per_sample, tA2DP_LC3PLUS_HR_CIE* p_result,
     btav_a2dp_codec_config_t* p_codec_config) {
-  if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
-    p_codec_config->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
-    p_result->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
-    return true;
-  }
+  //if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
+  //  p_codec_config->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
+  //  p_result->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
+  //  return true;
+  //}
   if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24) {
     p_codec_config->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24;
     p_result->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24;
@@ -798,11 +799,11 @@ static bool select_audio_bits_per_sample(
       }
       break;
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32:
-      if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
-        p_codec_config->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
-        p_result->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
-        return true;
-      }
+    //  if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
+    //    p_codec_config->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
+    //    p_result->bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32;
+    //    return true;
+    //  }
       break;
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_NONE:
       break;
@@ -1103,11 +1104,11 @@ bool A2dpCodecConfigLC3plusHR::setCodecConfig(const uint8_t* p_peer_codec_info,
       }
       break;
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32:
-      if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
-        result_config_cie.bits_per_sample = codec_user_config_.bits_per_sample;
-        codec_capability_.bits_per_sample = codec_user_config_.bits_per_sample;
-        codec_config_.bits_per_sample = codec_user_config_.bits_per_sample;
-      }
+    //  if (bits_per_sample & BTAV_A2DP_CODEC_BITS_PER_SAMPLE_32) {
+    //    result_config_cie.bits_per_sample = codec_user_config_.bits_per_sample;
+    //    codec_capability_.bits_per_sample = codec_user_config_.bits_per_sample;
+    //    codec_config_.bits_per_sample = codec_user_config_.bits_per_sample;
+    //  }
       break;
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_NONE:
       result_config_cie.bits_per_sample = BTAV_A2DP_CODEC_BITS_PER_SAMPLE_NONE;
