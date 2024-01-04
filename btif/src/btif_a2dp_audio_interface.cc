@@ -74,6 +74,9 @@
 #include <hwbinder/ProcessState.h>
 #include <a2dp_vendor_aptx_adaptive_constants.h>
 #include <a2dp_vendor_ldac_constants.h>
+#include <a2dp_vendor_lhdc_constants.h>
+#include <a2dp_vendor_flac_constants.h>
+#include <a2dp_vendor_lc3plus_hr_constants.h>
 #include <a2dp_vendor_aptx_hd_constants.h>
 #include <a2dp_vendor.h>
 #include "bta/av/bta_av_int.h"
@@ -824,7 +827,9 @@ uint8_t btif_a2dp_audio_process_request(uint8_t cmd)
         else if (A2DP_MEDIA_CT_NON_A2DP == codec_type)
         {
           int samplerate = A2DP_GetTrackSampleRate(p_codec_info);
-          if ((A2DP_VendorCodecGetVendorId(p_codec_info)) == A2DP_LDAC_VENDOR_ID) {
+          uint32_t vendor_id = A2DP_VendorCodecGetVendorId(p_codec_info);
+          if (vendor_id == A2DP_LDAC_VENDOR_ID || vendor_id == A2DP_LHDC_VENDOR_ID ||
+              vendor_id == A2DP_LC3PLUS_HR_VENDOR_ID || vendor_id == A2DP_FLAC_VENDOR_ID) {
             bitrate = A2DP_GetTrackBitRate(p_codec_info);
             LOG_INFO(LOG_TAG,"bitrate = %d", bitrate);
           } else {
@@ -1273,7 +1278,8 @@ uint8_t btif_a2dp_audio_process_request(uint8_t cmd)
         {
           int samplerate = A2DP_GetTrackSampleRate(p_codec_info);
           codec_vendor_id = A2DP_VendorCodecGetVendorId(p_codec_info);
-          if (codec_vendor_id == A2DP_LDAC_VENDOR_ID) {
+          if (codec_vendor_id == A2DP_LDAC_VENDOR_ID || codec_vendor_id == A2DP_LHDC_VENDOR_ID ||
+              codec_vendor_id == A2DP_LC3PLUS_HR_VENDOR_ID || codec_vendor_id == A2DP_FLAC_VENDOR_ID)  {
             bitrate = A2DP_GetTrackBitRate(p_codec_info);
           } else {
             /* BR = (Sampl_Rate * PCM_DEPTH * CHNL)/Compression_Ratio */

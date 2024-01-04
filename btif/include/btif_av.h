@@ -273,6 +273,17 @@ bool btif_av_check_flag_remote_suspend(int index);
 bool btif_av_is_split_a2dp_enabled(void);
 
 /*******************************************************************************
+ *
+ * Function         btif_av_is_exta2dp_codec
+ *
+ * Description      Check if codec is from ExtA2DP (currently LHDC, FLAC or LC3plus HR).
+ *
+ * Returns          TRUE if ExtA2DP codec, FALSE otherwise
+ *
+ ******************************************************************************/
+bool btif_av_is_exta2dp_codec(void);
+
+/*******************************************************************************
 **
 ** Function         btif_av_any_br_peer
 **

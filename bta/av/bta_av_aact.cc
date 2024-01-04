@@ -4454,6 +4454,7 @@ void bta_av_offload_req(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
     }
     else if ((strcmp(codec_name,"LDAC")) == 0) codec_type = 4;
     else if ((strcmp(codec_name,"aptX-TWS")) == 0) codec_type = 11;
+    else if ((strncmp(codec_name,"LHDC", 4)) == 0) {status = BTA_AV_FAIL; goto exit;}
     if ((codec_type == 8) || (codec_type == 9) || (codec_type == 4)) {
       if (mtu > MAX_2MBPS_AVDTP_MTU) {
         APPL_TRACE_IMP("Restricting AVDTP MTU size to 663 for APTx codecs");
@@ -4636,6 +4637,7 @@ void bta_av_offload_req(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
      }
    }
    */
+exit:
   if (status != BTA_AV_SUCCESS) {
     tBTA_AV bta_av_data;
     bta_av_data.status = status;
