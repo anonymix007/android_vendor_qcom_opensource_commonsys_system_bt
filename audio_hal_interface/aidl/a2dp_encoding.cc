@@ -14,7 +14,8 @@
  * limitations under the License.
  */
  /*
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 
     * Redistribution and use in source and binary forms, with or without
       modification, are permitted (subject to the limitations in the
@@ -170,20 +171,52 @@ bool A2dpTransport::GetPresentationPosition(uint64_t* remote_delay_report_ns,
 }
 
 void A2dpTransport::SourceMetadataChanged(
-    const source_metadata_t& source_metadata) {
+  const source_metadata_t& source_metadata) {
+
   auto track_count = source_metadata.track_count;
   auto tracks = source_metadata.tracks;
+
   LOG(INFO) << __func__ << "AIDL: " << track_count << " track(s) received";
-  while (track_count) {
-     LOG(INFO) << __func__ << "AIDL: usage=" << tracks->usage
-               << ", content_type=" << tracks->content_type
-               << ", gain=" << tracks->gain;
-    --track_count;
-    ++tracks;
+  if (track_count == 0) {
+    LOG(WARNING) << __func__ << ": Invalid number of metadata changed tracks";
+    return;
   }
+
+  auto usage = source_metadata.tracks->usage;
+
+  LOG(INFO) << __func__ << ", content_type=" << tracks->content_type
+                        << ", track_count: " << track_count
+                        << ", usage: " << usage;
+
+  btif_ahim_update_src_metadata(source_metadata);
+
 }
 
-void A2dpTransport::SinkMetadataChanged(const sink_metadata_t&) {}
+void A2dpTransport::SinkMetadataChanged(
+  const sink_metadata_t& sink_metadata) {
+
+  auto track_count = sink_metadata.track_count;
+  auto tracks = sink_metadata.tracks;
+
+  LOG(INFO) << __func__ << "AIDL: " << track_count << " track(s) received";
+  if (track_count == 0) {
+    LOG(WARNING) << __func__ << ": Invalid number of metadata changed tracks";
+    return;
+  }
+
+  auto source = sink_metadata.tracks->source;
+
+  LOG(INFO) << __func__ << ", track_count: " << track_count
+                        << ", source: " << source;
+
+  btif_ahim_update_sink_metadata(sink_metadata);
+
+}
+
+void A2dpTransport::SetLatencyMode(bool is_low_latency) {
+  LOG(INFO) << __func__ << " is_low_latency: " << is_low_latency;
+  btif_ahim_set_latency_mode(is_low_latency);
+}
 
 tA2DP_CTRL_CMD A2dpTransport::GetPendingCmd() const {
 LOG(ERROR) << ": AIDL Is this function called";
@@ -641,6 +674,18 @@ bool setup_codec() {
       sw_codec_type = current_codec.codec_type;
     }
   }
+
+  A2dpCodecConfig* a2dp_config = bta_av_get_a2dp_current_codec();
+  if (a2dp_config && active_hal_interface) {
+    btav_a2dp_codec_config_t current_codec = a2dp_config->getCodecConfig();
+    if (current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_APTX_ADAPTIVE) {
+      active_hal_interface->set_low_latency_allowed(true);
+    }
+    else {
+      active_hal_interface->set_low_latency_allowed(false);
+    }
+  }
+
   return active_hal_interface->UpdateAudioConfig(audio_config);
 }
 

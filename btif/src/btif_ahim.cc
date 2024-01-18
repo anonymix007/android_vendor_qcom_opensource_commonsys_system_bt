@@ -28,7 +28,8 @@
  *
  ******************************************************************************/
 /*
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 
     * Redistribution and use in source and binary forms, with or without
       modification, are permitted (subject to the limitations in the
@@ -73,6 +74,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 #include "audio_hal_interface/aidl/a2dp_encoding.h"
 #include "audio_hal_interface/aidl/le_audio_software.h"
 #include <hardware/audio.h>
+#include <hardware/bt_apm.h>
 #include <vector>
 #ifdef ADV_AUDIO_FEATURE
 #include <hardware/bt_pacs_client.h>
@@ -198,6 +200,10 @@ void btif_ahim_update_current_profile(uint8_t profile)
 }
 void btif_ahim_process_request(tA2DP_CTRL_CMD cmd, uint8_t profile,
                                uint8_t direction) {
+  if (btif_check_dual_mode()) {
+    btif_ahim_process_request_DM(cmd, profile, direction);
+    return;
+  }
   std::lock_guard<std::mutex> lock(active_profile_mtx);
   if (btif_ahim_is_aosp_aidl_hal_enabled()) {
     cur_active_profile = profile;
@@ -234,6 +240,60 @@ void btif_ahim_process_request(tA2DP_CTRL_CMD cmd, uint8_t profile,
   }
 }
 
+void btif_ahim_process_request_DM(tA2DP_CTRL_CMD cmd, uint8_t profile,
+                               uint8_t direction) {
+  RawAddress peer_bda;
+  std::lock_guard<std::mutex> lock(active_profile_mtx);
+  switch(profile)  {
+    case A2DP:
+      btif_av_get_active_peer_addr(&peer_bda);
+      LOG(INFO) << __func__ << ": Sending AIDL request to AV, "
+                << "Peer BDA: " << peer_bda << ", isEmpty: " << peer_bda.IsEmpty();
+      if (!peer_bda.IsEmpty()) {
+         cur_active_profile = profile;
+      }
+      btif_dispatch_sm_event(BTIF_AV_PROCESS_HIDL_REQ_EVT,
+                             (char*)&cmd, sizeof(cmd));
+      break;
+    case AUDIO_GROUP_MGR:
+      btif_av_get_active_peer_addr(&peer_bda);
+      LOG(INFO) << __func__ << ": Sending AIDL request to Audio Group Manager, "
+                << "Peer BDA: " << peer_bda << ", isEmpty: " << peer_bda.IsEmpty();
+      if (peer_bda.IsEmpty()) {
+         cur_active_profile = profile;
+      }
+      if (pclient_cbs[AUDIO_GROUP_MGR - 1] &&
+          pclient_cbs[AUDIO_GROUP_MGR - 1]->client_cb) {
+        LOG(INFO) << __func__ << ": Calling call back for Audio Group Manager";
+        pclient_cbs[AUDIO_GROUP_MGR - 1]->client_cb(cmd, direction);
+      }
+      else
+        BTIF_TRACE_ERROR("%s, Audio Group Manager is not registered with AHIM",
+                          __func__);
+      break;
+    case BROADCAST:
+      btif_av_get_active_peer_addr(&peer_bda);
+      LOG(INFO) << __func__ << ": Sending AIDL request to BROADCAST, "
+                << "Peer BDA: " << peer_bda;
+      if (peer_bda.IsEmpty()) {
+         cur_active_profile = profile;
+      }
+      if (pclient_cbs[BROADCAST - 1] &&
+          pclient_cbs[BROADCAST - 1]->client_cb) {
+        BTIF_TRACE_IMP("%s: calling call back for BROADCAST", __func__);
+        pclient_cbs[BROADCAST - 1]->client_cb(cmd, direction);
+      }
+      else
+        BTIF_TRACE_ERROR("%s, BROADCAST is not registered with AHIM", __func__);
+      break;
+  }
+}
+
+void btif_ahim_set_latency_mode(bool is_low_latency) {
+  LOG(INFO) << __func__ << ", is_low_latency: " << is_low_latency;
+  btif_apm_set_latency_mode(is_low_latency);
+}
+
 void btif_ahim_update_src_metadata (const source_metadata_t& source_metadata) {
   auto track_count = source_metadata.track_count;
   auto usage = source_metadata.tracks->usage;
@@ -242,17 +302,30 @@ void btif_ahim_update_src_metadata (const source_metadata_t& source_metadata) {
                         << ", usage: " << usage;
 
   // pass on the callbacks to ACM only for new vendor
-  if(btif_ahim_is_aosp_aidl_hal_enabled()) {
-    BTIF_TRACE_IMP("%s: sending AIDL request to Audio Group Manager", __func__);
-    if (pclient_cbs[AUDIO_GROUP_MGR - 1] &&
-        pclient_cbs[AUDIO_GROUP_MGR - 1]->src_meta_update) {
-      BTIF_TRACE_IMP("%s: calling call back for Audio Group Manager", __func__);
-      std::unique_lock<std::mutex> guard(src_metadata_wait_mutex_);
-      src_metadata_wait = false;
-      pclient_cbs[AUDIO_GROUP_MGR - 1]->src_meta_update(source_metadata);
-      src_metadata_wait_cv.wait_for(guard, std::chrono::milliseconds(3200),
-                        []{return src_metadata_wait;});
-      BTIF_TRACE_IMP("%s: src waiting completed", __func__);
+  if (btif_ahim_is_aosp_aidl_hal_enabled()) {
+    LOG(INFO) << __func__ << ": Current Active Profile: " << loghex(cur_active_profile);
+    if(cur_active_profile == A2DP) {
+      btif_report_a2dp_src_metadata_update((source_metadata_t *)&source_metadata);
+      if (btif_check_dual_mode()) {
+        std::unique_lock<std::mutex> guard(src_metadata_wait_mutex_);
+        src_metadata_wait = false;
+        src_metadata_wait_cv.wait_for(guard, std::chrono::milliseconds(3200),
+                            []{return src_metadata_wait;});
+        LOG(INFO) << __func__ << ": A2DP Src waiting completed!!";
+      }
+    } else if(cur_active_profile == AUDIO_GROUP_MGR ||
+        cur_active_profile == BROADCAST) {
+      LOG(INFO) << __func__ << ": Sending AIDL request to Audio Group Manager";
+      if (pclient_cbs[AUDIO_GROUP_MGR - 1] &&
+          pclient_cbs[AUDIO_GROUP_MGR - 1]->src_meta_update) {
+        LOG(INFO) << __func__ << ": Calling call back for Audio Group Manager";
+        std::unique_lock<std::mutex> guard(src_metadata_wait_mutex_);
+        src_metadata_wait = false;
+        pclient_cbs[AUDIO_GROUP_MGR - 1]->src_meta_update(source_metadata);
+        src_metadata_wait_cv.wait_for(guard, std::chrono::milliseconds(3200),
+                          []{return src_metadata_wait;});
+        LOG(INFO) << __func__ << ": Src waiting completed";
+      }
     }
   }
 }
@@ -296,6 +369,7 @@ bool btif_ahim_init_hal(thread_t *t, uint8_t profile) {
     std::lock_guard<std::mutex>lock(session_mtx);
     BTIF_TRACE_IMP("%s: AIDL", __func__);
     if (profile == A2DP) {
+      if (!btif_check_dual_mode()) {
         if (unicastSinkClientInterface != nullptr) {
           leAudioClientInterface->ReleaseSink(unicastSinkClientInterface);
           unicastSinkClientInterface = nullptr;
@@ -308,6 +382,7 @@ bool btif_ahim_init_hal(thread_t *t, uint8_t profile) {
           leAudioClientInterface->ReleaseSink(broadcastSinkClientInterface);
           broadcastSinkClientInterface = nullptr;
         }
+      }
       return bluetooth::audio::aidl::a2dp::init(t);
     } else {
       if(leAudioClientInterface == nullptr) {
