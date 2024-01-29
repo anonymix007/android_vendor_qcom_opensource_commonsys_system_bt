@@ -1312,8 +1312,7 @@ static bool btif_av_state_idle_handler(btif_sm_event_t event, void* p_data, int 
         btif_av_update_multicast_state(index);
         if (btif_av_cb[index].peer_sep == AVDT_TSEP_SNK) {
           /* if queued PLAY command,  send it now */
-          //if (!btif_a2dp_source_is_hal_v2_supported())
-          if (!btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false)
+          if (!btif_a2dp_source_is_hal_v2_supported())
             btif_rc_check_handle_pending_play(p_bta_data->open.bd_addr,
                    (p_bta_data->open.status == BTA_AV_SUCCESS));
         } else if (btif_av_cb[index].peer_sep == AVDT_TSEP_SRC) {
@@ -1534,8 +1533,7 @@ static bool btif_av_state_opening_handler(btif_sm_event_t event, void* p_data,
         btif_av_update_multicast_state(index);
         if (btif_av_cb[index].peer_sep == AVDT_TSEP_SNK) {
           /* if queued PLAY command,  send it now */
-          //if (!btif_a2dp_source_is_hal_v2_supported())
-          if (!btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false)
+          if (!btif_a2dp_source_is_hal_v2_supported())
             btif_rc_check_handle_pending_play(p_bta_data->open.bd_addr,
                       (p_bta_data->open.status == BTA_AV_SUCCESS));
         } else if (btif_av_cb[index].peer_sep == AVDT_TSEP_SRC) {
@@ -1971,8 +1969,7 @@ static bool btif_av_state_opened_handler(btif_sm_event_t event, void* p_data,
         btif_av_cb[index].flags |= BTIF_AV_FLAG_PENDING_START;
       } else {
         bt_status_t status = BT_STATUS_FAIL;
-        //if (btif_a2dp_source_is_hal_v2_supported()) {
-        if (btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+        if (btif_a2dp_source_is_hal_v2_supported()) {
             status = BT_STATUS_SUCCESS;
         } else {
             status = btif_a2dp_source_setup_codec(btif_av_cb[index].bta_handle);
@@ -2400,8 +2397,7 @@ static bool btif_av_state_opened_handler(btif_sm_event_t event, void* p_data,
       uint8_t hdl = btif_av_get_av_hdl_from_idx(index);
       APPL_TRACE_DEBUG("%s: hdl = %d, btif_a2dp_source_is_hal_v2_supported() %d",
             __func__, hdl, btif_a2dp_source_is_hal_v2_supported());
-      //if (hdl >= 0 && !btif_a2dp_source_is_hal_v2_supported())
-      if (hdl >= 0 && !btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false)
+      if (hdl >= 0 && !btif_a2dp_source_is_hal_v2_supported())
         btif_a2dp_source_setup_codec(hdl);
       }
       break;
@@ -3407,8 +3403,7 @@ static void btif_av_handle_event(uint16_t event, char* p_param) {
           // if BA is enabled, don't process this start.
           BTIF_TRACE_DEBUG(" BA enabled and we received START_REQ ");
           tA2DP_CTRL_CMD pend_cmd = A2DP_CTRL_CMD_NONE;
-          //if (btif_a2dp_source_is_hal_v2_supported()) {
-          if (btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+          if (btif_a2dp_source_is_hal_v2_supported()) {
             pend_cmd =  bluetooth::audio::a2dp::get_pending_command();
           } else {
             pend_cmd = btif_a2dp_audio_interface_get_pending_cmd();
@@ -4868,8 +4863,7 @@ static bt_status_t set_active_device(const RawAddress& bd_addr) {
   if (!bta_av_co_set_active_peer(bd_addr)) {
     BTIF_TRACE_WARNING("%s: unable to set active peer in BtaAvCo",__func__);
   }
-  //if (btif_a2dp_source_is_hal_v2_supported()) {
-  if (btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_supported()) {
     std::unique_lock<std::mutex> guard(session_wait_mutex_);
     session_wait = false;
     /* Initiate handoff for the device with address in the argument*/
@@ -5365,14 +5359,10 @@ bool btif_av_stream_started_ready(void)
       BTIF_TRACE_ERROR("%s: Under Dual handoff ",__func__ );
       status = false;
       break;
-    } else if ((btif_av_cb[i].flags &
+    } else if (btif_av_cb[i].flags &
                (BTIF_AV_FLAG_LOCAL_SUSPEND_PENDING |
                 BTIF_AV_FLAG_REMOTE_SUSPEND |
-                BTIF_AV_FLAG_PENDING_STOP))  ||
-               (btif_av_is_exta2dp_codec() &&
-                btif_av_cb[i].reconfig_pending &&
-                btif_av_cb[i].flags & BTIF_AV_FLAG_PENDING_START)
-                ) {
+                BTIF_AV_FLAG_PENDING_STOP)) {
       status = false;
       break;
     } else if (btif_av_cb[i].state == BTIF_AV_STATE_STARTED)
@@ -5528,8 +5518,7 @@ bt_status_t btif_av_execute_service(bool b_enable) {
             btif_a2dp_audio_interface_deinit();
             btif_a2dp_audio_if_init = false;
           } else {
-            //if (btif_a2dp_source_is_hal_v2_supported()) {
-            if (btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+            if (btif_a2dp_source_is_hal_v2_supported()) {
               pending_cmd =  bluetooth::audio::a2dp::get_pending_command();
             } else {
               pending_cmd = btif_a2dp_control_get_pending_command();
@@ -5537,8 +5526,7 @@ bt_status_t btif_av_execute_service(bool b_enable) {
             BTIF_TRACE_DEBUG("%s: a2dp-ctrl-cmd : %s", __func__,
                                      audio_a2dp_hw_dump_ctrl_event(pending_cmd));
             if (pending_cmd) {
-              //if(btif_a2dp_source_is_hal_v2_supported()) {
-              if (btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+              if(btif_a2dp_source_is_hal_v2_supported()) {
                 btif_a2dp_source_command_ack(pending_cmd,
                             A2DP_CTRL_ACK_DISCONNECT_IN_PROGRESS);
               } else {
@@ -6445,28 +6433,6 @@ bool btif_av_is_split_a2dp_enabled() {
   }
 }
 
-/*******************************************************************************
- *
- * Function         btif_av_is_exta2dp_codec
- *
- * Description      Check if codec is from ExtA2DP (currently LHDC, FLAC or LC3plus HR).
- *
- * Returns          TRUE if ExtA2DP codec, FALSE otherwise
- *
- ******************************************************************************/
-bool btif_av_is_exta2dp_codec() {
-
-  A2dpCodecConfig* a2dp_codec_config = bta_av_get_a2dp_current_codec();
-  bool is_exta2dp_codec = a2dp_codec_config != nullptr
-          && ((a2dp_codec_config->codecIndex() == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2)
-          || (a2dp_codec_config->codecIndex() == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3)
-          || (a2dp_codec_config->codecIndex() == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5)
-          || (a2dp_codec_config->codecIndex() == BTAV_A2DP_CODEC_INDEX_SOURCE_LC3PLUS_HR)
-          || (a2dp_codec_config->codecIndex() == BTAV_A2DP_CODEC_INDEX_SOURCE_FLAC));
- BTIF_TRACE_DEBUG("%s: %s", __func__, is_exta2dp_codec ? "true" : "false");
- return is_exta2dp_codec;
-}
-
 /******************************************************************************
 **
 ** Function         btif_av_is_under_handoff
@@ -6883,8 +6849,7 @@ uint16_t btif_av_get_audio_delay(int index) {
     }
   }
 
-  //if (!btif_a2dp_source_is_hal_v2_supported()) {
-  if (!btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false) {
+  if (!btif_a2dp_source_is_hal_v2_supported()) {
     if (index >= 0 && index < btif_max_av_clients) {
       return btif_a2dp_control_get_audio_delay(index);
     } else {

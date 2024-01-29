@@ -1279,7 +1279,7 @@ uint8_t btif_a2dp_audio_process_request(uint8_t cmd)
           int samplerate = A2DP_GetTrackSampleRate(p_codec_info);
           codec_vendor_id = A2DP_VendorCodecGetVendorId(p_codec_info);
           if (codec_vendor_id == A2DP_LDAC_VENDOR_ID || codec_vendor_id == A2DP_LHDC_VENDOR_ID ||
-              codec_vendor_id == A2DP_LC3PLUS_HR_VENDOR_ID || codec_vendor_id == A2DP_FLAC_VENDOR_ID)  {
+              codec_vendor_id == A2DP_LC3PLUS_HR_VENDOR_ID || codec_vendor_id == A2DP_FLAC_VENDOR_ID) {
             bitrate = A2DP_GetTrackBitRate(p_codec_info);
           } else {
             /* BR = (Sampl_Rate * PCM_DEPTH * CHNL)/Compression_Ratio */

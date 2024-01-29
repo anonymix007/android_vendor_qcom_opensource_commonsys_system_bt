@@ -307,9 +307,9 @@ static void btif_a2dp_source_startup_delayed(UNUSED_ATTR void* context) {
 #if (OFF_TARGET_TEST_ENABLED == FALSE)
   raise_priority_a2dp(TASK_HIGH_MEDIA);
 #endif
-  //if (!btif_a2dp_source_is_hal_v2_supported()) {
+  if (!btif_a2dp_source_is_hal_v2_supported()) {
     btif_a2dp_control_init();
-  //}
+  }
   btif_a2dp_source_state = BTIF_A2DP_SOURCE_STATE_RUNNING;
   APPL_TRACE_EVENT("%s: enc_update_in_progress = %d", __func__, enc_update_in_progress);
   enc_update_in_progress = FALSE;
@@ -352,16 +352,16 @@ void btif_a2dp_source_shutdown(void) {
 static void btif_a2dp_source_shutdown_delayed(UNUSED_ATTR void* context) {
   APPL_TRACE_DEBUG("%s", __func__);
   btif_a2dp_command_ack(A2DP_CTRL_ACK_SUCCESS);
-  //if (btif_a2dp_source_is_hal_v2_supported()){
+  if (btif_a2dp_source_is_hal_v2_supported()){
 
 #if AHIM_ENABLED
     btif_ahim_cleanup_hal(A2DP);
 #else
     bluetooth::audio::a2dp::cleanup();
 #endif
-  //} else {
+  } else {
     btif_a2dp_control_cleanup();
-  //}
+  }
   fixed_queue_free(btif_a2dp_source_cb.tx_audio_queue, NULL);
   btif_a2dp_source_cb.tx_audio_queue = NULL;
 
@@ -666,10 +666,7 @@ void btif_a2dp_source_start_audio_req(void) {
 void btif_a2dp_source_stop_audio_req(void) {
   BT_HDR* p_buf = (BT_HDR*)osi_malloc(sizeof(BT_HDR));
   tA2DP_CTRL_CMD pending_cmd = A2DP_CTRL_CMD_NONE;
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-    && btif_av_is_split_a2dp_enabled())
-    || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     pending_cmd = btif_ahim_get_pending_command(A2DP);
 #else
@@ -820,10 +817,7 @@ void btif_a2dp_source_on_idle(void) {
 void btif_a2dp_source_on_stopped(tBTA_AV_SUSPEND* p_av_suspend) {
   APPL_TRACE_EVENT("## ON A2DP SOURCE STOPPED ##");
   tA2DP_CTRL_CMD pending_cmd = A2DP_CTRL_CMD_NONE;
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-    && btif_av_is_split_a2dp_enabled())
-    || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     pending_cmd = btif_ahim_get_pending_command(A2DP);
 #else
@@ -844,10 +838,7 @@ void btif_a2dp_source_on_stopped(tBTA_AV_SUSPEND* p_av_suspend) {
                            __func__, p_av_suspend->status);
         if ((pending_cmd == A2DP_CTRL_CMD_STOP) ||
                 (pending_cmd == A2DP_CTRL_CMD_SUSPEND)) {
-          //if (btif_a2dp_source_is_hal_v2_enabled()) {
-          if ((btif_a2dp_source_is_hal_v2_enabled()
-              && btif_av_is_split_a2dp_enabled())
-              || btif_av_get_multicast_state() == true) {
+          if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
             btif_ahim_ack_stream_suspended(A2DP_CTRL_ACK_FAILURE, A2DP);
 #else
@@ -858,10 +849,7 @@ void btif_a2dp_source_on_stopped(tBTA_AV_SUSPEND* p_av_suspend) {
           }
           if (property_get("persist.vendor.bt.a2dp.hal.implementation", a2dp_hal_imp, "false") &&
                   !strcmp(a2dp_hal_imp, "true")) {
-            //if (btif_a2dp_source_is_hal_v2_enabled()) {
-            if ((btif_a2dp_source_is_hal_v2_enabled()
-                && btif_av_is_split_a2dp_enabled())
-                || btif_av_get_multicast_state() == true) {
+            if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
               btif_ahim_reset_pending_command(A2DP);
 #else
@@ -909,10 +897,7 @@ void btif_a2dp_source_on_stopped(tBTA_AV_SUSPEND* p_av_suspend) {
 void btif_a2dp_source_on_suspended(tBTA_AV_SUSPEND* p_av_suspend) {
   APPL_TRACE_EVENT("## ON A2DP SOURCE SUSPENDED ##");
   tA2DP_CTRL_CMD pending_cmd = A2DP_CTRL_CMD_NONE;
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-    && btif_av_is_split_a2dp_enabled())
-    || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     pending_cmd = btif_ahim_get_pending_command(A2DP);
 #else
@@ -932,10 +917,7 @@ void btif_a2dp_source_on_suspended(tBTA_AV_SUSPEND* p_av_suspend) {
                          __func__, p_av_suspend->status);
         if ((pending_cmd == A2DP_CTRL_CMD_STOP) ||
                 (pending_cmd == A2DP_CTRL_CMD_SUSPEND)) {
-          //if (btif_a2dp_source_is_hal_v2_enabled()) {
-          if ((btif_a2dp_source_is_hal_v2_enabled()
-            && btif_av_is_split_a2dp_enabled())
-            || btif_av_get_multicast_state() == true) {
+          if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
             btif_ahim_ack_stream_suspended(A2DP_CTRL_ACK_FAILURE, A2DP);
 #else
@@ -947,10 +929,7 @@ void btif_a2dp_source_on_suspended(tBTA_AV_SUSPEND* p_av_suspend) {
 
           if (property_get("persist.vendor.bt.a2dp.hal.implementation", a2dp_hal_imp, "false") &&
                   !strcmp(a2dp_hal_imp, "true")) {
-            //if (btif_a2dp_source_is_hal_v2_enabled()) {
-            if ((btif_a2dp_source_is_hal_v2_enabled()
-              && btif_av_is_split_a2dp_enabled())
-              || btif_av_get_multicast_state() == true) {
+            if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
               btif_ahim_reset_pending_command(A2DP);
 #else
@@ -1038,8 +1017,7 @@ static void btif_a2dp_source_audio_tx_stop_event(void) {
   tA2DP_CTRL_CMD pending_cmd = A2DP_CTRL_CMD_NONE;
 
   // Keep track of audio data still left in the pipe
-  //if (btif_a2dp_source_is_hal_v2_supported()) {
-  if ( btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_supported()) {
     btif_a2dp_control_log_bytes_read(
 #if AHIM_ENABLED
         btif_ahim_read(p_buf, sizeof(p_buf)));
@@ -1056,8 +1034,7 @@ static void btif_a2dp_source_audio_tx_stop_event(void) {
   alarm_free(btif_a2dp_source_cb.media_alarm);
   btif_a2dp_source_cb.media_alarm = NULL;
 
-  //if (!btif_a2dp_source_is_hal_v2_supported()) {
-  if (!btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false) {
+  if (!btif_a2dp_source_is_hal_v2_supported()) {
     UIPC_Close(UIPC_CH_ID_AV_AUDIO);
   }
   /*
@@ -1072,10 +1049,7 @@ static void btif_a2dp_source_audio_tx_stop_event(void) {
    * a block/wait. Due to this acknowledgement, the A2DP HAL is guranteed
    * to get the ACK for any pending command in such cases.
    */
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-    && btif_av_is_split_a2dp_enabled())
-    || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     pending_cmd = btif_ahim_get_pending_command(A2DP);
 #else
@@ -1088,10 +1062,7 @@ static void btif_a2dp_source_audio_tx_stop_event(void) {
   if (pending_cmd == A2DP_CTRL_CMD_SUSPEND ||
           pending_cmd == A2DP_CTRL_CMD_STOP) {
     APPL_TRACE_DEBUG("%s, Ack for pending Stop/Suspend", __func__);
-    //if (btif_a2dp_source_is_hal_v2_enabled()) {
-    if ((btif_a2dp_source_is_hal_v2_enabled()
-        && btif_av_is_split_a2dp_enabled())
-        || btif_av_get_multicast_state() == true) {
+    if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
       btif_ahim_ack_stream_suspended(A2DP_CTRL_ACK_SUCCESS, A2DP);
 #else
@@ -1102,8 +1073,7 @@ static void btif_a2dp_source_audio_tx_stop_event(void) {
     }
   } else if (pending_cmd == A2DP_CTRL_CMD_START) {
     BTIF_TRACE_ERROR("Ack Pending Start while Disconnect in Progress");
-    //if (btif_a2dp_source_is_hal_v2_supported()) {
-    if (btif_av_is_split_a2dp_enabled() || btif_av_get_multicast_state() == true) {
+    if (btif_a2dp_source_is_hal_v2_supported()) {
 #if AHIM_ENABLED
       btif_ahim_ack_stream_started(A2DP_CTRL_ACK_DISCONNECT_IN_PROGRESS, A2DP);
 #else
@@ -1305,8 +1275,7 @@ static void btif_a2dp_source_audio_tx_flush_event(UNUSED_ATTR BT_HDR* p_msg) {
       time_get_os_boottime_us();
   fixed_queue_flush(btif_a2dp_source_cb.tx_audio_queue, osi_free);
 
-  //if (!btif_a2dp_source_is_hal_v2_supported()) {
-  if (!btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false) {
+  if (!btif_a2dp_source_is_hal_v2_supported()) {
     UIPC_Ioctl(UIPC_CH_ID_AV_AUDIO, UIPC_REQ_RX_FLUSH, NULL);
   }
 }
@@ -1841,10 +1810,7 @@ bool btif_a2dp_source_end_session(const RawAddress& peer_address) {
 
 void btif_a2dp_update_sink_latency_change() {
   APPL_TRACE_EVENT("%s", __func__);
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-      && btif_av_is_split_a2dp_enabled())
-      || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
     uint16_t sink_latency;
     int idx = btif_av_get_current_playing_dev_idx();
     if (btif_ba_get_state() > BTIF_BA_STATE_IDLE_AUDIO_NS) { // IsBAEnabled

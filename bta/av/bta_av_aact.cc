@@ -4454,7 +4454,11 @@ void bta_av_offload_req(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
     }
     else if ((strcmp(codec_name,"LDAC")) == 0) codec_type = 4;
     else if ((strcmp(codec_name,"aptX-TWS")) == 0) codec_type = 11;
-    else if ((strncmp(codec_name,"LHDC", 4)) == 0) {status = BTA_AV_FAIL; goto exit;}
+    else if ((strncmp(codec_name,"LHDC", 4)) == 0 || (strcmp(codec_name,"FLAC")) == 0 || (strcmp(codec_name,"LC3plus HR")) == 0 ) {
+      APPL_TRACE_ERROR("%s: Cannot offload SW codec %s", __func__, codec_name);
+      status = BTA_AV_FAIL; 
+      goto exit;
+    }
     if ((codec_type == 8) || (codec_type == 9) || (codec_type == 4)) {
       if (mtu > MAX_2MBPS_AVDTP_MTU) {
         APPL_TRACE_IMP("Restricting AVDTP MTU size to 663 for APTx codecs");

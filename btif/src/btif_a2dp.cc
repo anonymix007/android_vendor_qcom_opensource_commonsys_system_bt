@@ -70,10 +70,7 @@ bool btif_a2dp_on_started(tBTA_AV_START* p_av_start, bool pending_start,
                           tBTA_AV_HNDL hdl) {
   bool ack = false;
   tA2DP_CTRL_CMD pending_cmd = A2DP_CTRL_CMD_NONE;
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-    && btif_av_is_split_a2dp_enabled())
-    || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     pending_cmd = btif_ahim_get_pending_command(A2DP);
 #else
@@ -105,10 +102,7 @@ bool btif_a2dp_on_started(tBTA_AV_START* p_av_start, bool pending_start,
       return true;
     } else {
       if (pending_cmd == A2DP_CTRL_CMD_START) {
-        //if (btif_a2dp_source_is_hal_v2_enabled()) {
-        if ((btif_a2dp_source_is_hal_v2_enabled()
-         && btif_av_is_split_a2dp_enabled())
-         || btif_av_get_multicast_state() == true) {
+        if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
           btif_ahim_ack_stream_started(A2DP_CTRL_ACK_SUCCESS, A2DP);
 #else
@@ -148,10 +142,7 @@ bool btif_a2dp_on_started(tBTA_AV_START* p_av_start, bool pending_start,
             btif_dispatch_sm_event(BTIF_AV_OFFLOAD_START_REQ_EVT, (char *)&hdl, 1);
           } else {
             if (pending_cmd == A2DP_CTRL_CMD_START) {
-              //if (btif_a2dp_source_is_hal_v2_enabled()) {
-              if ((btif_a2dp_source_is_hal_v2_enabled()
-                  && btif_av_is_split_a2dp_enabled())
-                  || btif_av_get_multicast_state() == true) {
+              if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
                 btif_ahim_ack_stream_started(A2DP_CTRL_ACK_SUCCESS, A2DP);
 #else
@@ -198,12 +189,6 @@ bool btif_a2dp_on_started(tBTA_AV_START* p_av_start, bool pending_start,
         !strcmp(a2dp_hal_imp, "true")) {
       int index = (hdl & BTA_AV_HNDL_MSK) - 1;
       RawAddress addr = btif_av_get_addr_by_index(index);
-
-      if(!btif_av_is_split_a2dp_enabled() && btif_av_get_multicast_state() == false) {
-          btif_a2dp_command_ack(A2DP_CTRL_ACK_FAILURE);
-          btif_a2dp_pending_cmds_reset();
-      }
-
       if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
         btif_ahim_ack_stream_started(A2DP_CTRL_ACK_FAILURE, A2DP);
@@ -235,10 +220,7 @@ bool btif_a2dp_on_started(tBTA_AV_START* p_av_start, bool pending_start,
         }
       } else {
         if (pending_cmd == A2DP_CTRL_CMD_START) {
-          //if (btif_a2dp_source_is_hal_v2_enabled()) {
-          if ((btif_a2dp_source_is_hal_v2_enabled()
-              && btif_av_is_split_a2dp_enabled())
-              || btif_av_get_multicast_state() == true) {
+          if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
             btif_ahim_ack_stream_started(A2DP_CTRL_ACK_LONG_WAIT_ERR, A2DP);
 #else
@@ -332,10 +314,6 @@ void btif_a2dp_on_suspended(tBTA_AV_SUSPEND* p_av_suspend) {
       btif_a2dp_sink_on_suspended(p_av_suspend);
     } else {
       btif_a2dp_source_on_suspended(p_av_suspend);
-      if (btif_av_is_exta2dp_codec() && !btif_av_is_split_a2dp_enabled()
-          && btif_av_get_multicast_state() == false) {
-          btif_a2dp_audio_on_suspended(p_av_suspend->status);
-      }
     }
   } else {
     if (p_av_suspend != NULL) {
@@ -356,9 +334,6 @@ void btif_a2dp_on_suspended(tBTA_AV_SUSPEND* p_av_suspend) {
 #endif
         }
       } else {
-        if (btif_av_get_multicast_state() == false) {
-           btif_a2dp_source_stop_audio_req();
-        }
         btif_a2dp_audio_on_suspended(p_av_suspend->status);
       }
       if (property_get("persist.vendor.bt.a2dp.hal.implementation", a2dp_hal_imp, "false") &&
@@ -491,10 +466,7 @@ void btif_a2dp_on_offload_started(tBTA_AV_STATUS status) {
                              sizeof(RawAddress));
     }
   }
-  //if (btif_a2dp_source_is_hal_v2_enabled()) {
-  if ((btif_a2dp_source_is_hal_v2_enabled()
-    && btif_av_is_split_a2dp_enabled())
-    || btif_av_get_multicast_state() == true) {
+  if (btif_a2dp_source_is_hal_v2_enabled()) {
 #if AHIM_ENABLED
     btif_ahim_ack_stream_started(ack, A2DP);
 #else
