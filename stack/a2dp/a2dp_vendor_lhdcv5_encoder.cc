@@ -875,7 +875,7 @@ void a2dp_vendor_lhdcv5_feeding_reset(void) {
   tA2DP_LHDCV5_ENCODER_PARAMS* p_encoder_params = &a2dp_lhdc_encoder_cb.lhdc_encoder_params;
   if (p_encoder_params->quality_mode_index == LHDCV5_QUALITY_AUTO) {
     if (lhdc_set_bitrate != NULL && a2dp_lhdc_encoder_cb.has_lhdc_handle) {
-      lhdc_set_bitrate(a2dp_lhdc_encoder_cb.lhdc_handle, LHDCV5_QUALITY_RESET_AUTO); // TODO: change back to LHDCV5_QUALITY_CTRL_RESET_ABR once latest liblhdcv5.so will be available
+      lhdc_set_bitrate(a2dp_lhdc_encoder_cb.lhdc_handle, LHDCV5_QUALITY_CTRL_RESET_ABR);
     }
   }
 
