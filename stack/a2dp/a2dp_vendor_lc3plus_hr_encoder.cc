@@ -114,7 +114,7 @@ typedef struct {
   struct {
     uint8_t data[4096];
     unsigned offset;
-    unsigned nbytes;
+    unsigned nbytes_block;
     unsigned current_bitrate;
     unsigned frames;
     unsigned target_frames;
@@ -174,14 +174,13 @@ static void a2dp_lc3plus_hr_enc_buf_update() {
     }
     buf.current_bitrate = current_bitrate;
     unsigned channels = params.channel_count;
-    buf.nbytes = encoder.GetFrameBytes(current_bitrate / channels);
-    LOG_INFO(LOG_TAG, "%s: channels %u, nbytes %u", __func__, channels, buf.nbytes);
-    unsigned frame_data_block = buf.nbytes * channels;
-    if (a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize < frame_data_block) {
-      LOG_INFO(LOG_TAG, "%s: fragmenting frame data block %u", __func__, frame_data_block);
+    buf.nbytes_block = encoder.GetFrameBlockBytes(current_bitrate );
+    LOG_INFO(LOG_TAG, "%s: channels %u, nbytes %u", __func__, channels, buf.nbytes_block);
+    if (a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize < buf.nbytes_block) {
+      LOG_INFO(LOG_TAG, "%s: fragmenting frame data block %u", __func__, buf.nbytes_block);
       buf.target_frames = 1;
     } else {
-      buf.target_frames = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize / frame_data_block;
+      buf.target_frames = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize / buf.nbytes_block;
       unsigned limit_frames = A2DP_LC3PLUS_HR_ENCODER_INTERVAL_MS / params.frame_ms;
       if (buf.target_frames > limit_frames) {
         buf.target_frames = limit_frames;
@@ -190,7 +189,7 @@ static void a2dp_lc3plus_hr_enc_buf_update() {
     }
   } else {
     buf.target_frames = 1;
-    buf.nbytes = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize / params.channel_count;
+    buf.nbytes_block = a2dp_lc3plus_hr_encoder_cb.TxAaMtuSize;
   }
 }
 
@@ -199,7 +198,7 @@ static void a2dp_lc3plus_hr_enc_buf_reset() {
   buf.offset = 0;
   buf.frames = 0;
   buf.target_frames = 0;
-  buf.nbytes = 0;
+  buf.nbytes_block = 0;
   buf.current_bitrate = 0;
   a2dp_lc3plus_hr_enc_buf_update();
 }
@@ -217,18 +216,18 @@ static int a2dp_lc3plus_hr_enc_buf_encode(void *pcm) {
   }
 #endif
 
-  int result = encoder.Encode(params.fmt, pcm, buf.nbytes, out_ptr);
+  int result = encoder.Encode(params.fmt, pcm, buf.nbytes_block, out_ptr);
 
   if (result == 0) {
 #ifdef LC3PLUS_HR_SAVE_DUMP
     if (a2dp_lc3plus_hr_encoder_cb.recFile != NULL) {
-      uint16_t size = buf.nbytes * params.channel_count;
+      uint16_t size = buf.nbytes_block;
       fwrite(&size, sizeof(size), 1, a2dp_lc3plus_hr_encoder_cb.recFile);
       fwrite(out_ptr, sizeof(uint8_t), size, a2dp_lc3plus_hr_encoder_cb.recFile);
     }
 #endif
 
-    buf.offset += buf.nbytes * params.channel_count;
+    buf.offset += buf.nbytes_block;
     buf.frames++;
   }
 
